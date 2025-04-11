@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -56,103 +57,103 @@ const App = () => (
             {/* Admin routes */}
             <Route path="/admin/dashboard" element={
               <ProtectedRoute allowedRoles={["admin"]}>
-                <div>Admin Dashboard - Coming in next phase</div>
+                <AdminDashboard />
               </ProtectedRoute>
             } />
             <Route path="/admin/manage-users" element={
               <ProtectedRoute allowedRoles={["admin"]}>
-                <div>Manage Users - Coming in next phase</div>
+                <ManageUsers />
               </ProtectedRoute>
             } />
             <Route path="/admin/reports" element={
               <ProtectedRoute allowedRoles={["admin"]}>
-                <div>Reports - Coming in next phase</div>
+                <Reports />
               </ProtectedRoute>
             } />
             <Route path="/admin/system-settings" element={
               <ProtectedRoute allowedRoles={["admin"]}>
-                <div>System Settings - Coming in next phase</div>
+                <SystemSettings />
               </ProtectedRoute>
             } />
             <Route path="/admin/send-notification" element={
               <ProtectedRoute allowedRoles={["admin"]}>
-                <div>Send Notification - Coming in next phase</div>
+                <AdminSendNotification />
               </ProtectedRoute>
             } />
             
             {/* Staff routes */}
             <Route path="/staff/dashboard" element={
               <ProtectedRoute allowedRoles={["staff"]}>
-                <div>Staff Dashboard - Coming in next phase</div>
+                <StaffDashboard />
               </ProtectedRoute>
             } />
             <Route path="/staff/manage-flights" element={
               <ProtectedRoute allowedRoles={["staff"]}>
-                <div>Manage Flights - Coming in next phase</div>
+                <ManageFlights />
               </ProtectedRoute>
             } />
             <Route path="/staff/assign-gate-runway" element={
               <ProtectedRoute allowedRoles={["staff"]}>
-                <div>Assign Gate/Runway - Coming in next phase</div>
+                <AssignGateRunway />
               </ProtectedRoute>
             } />
             <Route path="/staff/real-time-flights" element={
               <ProtectedRoute allowedRoles={["staff"]}>
-                <div>Real-Time Flights - Coming in next phase</div>
+                <RealTimeFlights />
               </ProtectedRoute>
             } />
             <Route path="/staff/send-notification" element={
               <ProtectedRoute allowedRoles={["staff"]}>
-                <div>Send Notification - Coming in next phase</div>
+                <StaffSendNotification />
               </ProtectedRoute>
             } />
             
             {/* Airline routes */}
             <Route path="/airline/dashboard" element={
               <ProtectedRoute allowedRoles={["airline"]}>
-                <div>Airline Dashboard - Coming in next phase</div>
+                <AirlineDashboard />
               </ProtectedRoute>
             } />
             <Route path="/airline/my-flights" element={
               <ProtectedRoute allowedRoles={["airline"]}>
-                <div>My Flights - Coming in next phase</div>
+                <MyFlights />
               </ProtectedRoute>
             } />
             <Route path="/airline/delay-manager" element={
               <ProtectedRoute allowedRoles={["airline"]}>
-                <div>Delay Manager - Coming in next phase</div>
+                <DelayManager />
               </ProtectedRoute>
             } />
             <Route path="/airline/passenger-notify" element={
               <ProtectedRoute allowedRoles={["airline"]}>
-                <div>Passenger Notify - Coming in next phase</div>
+                <PassengerNotify />
               </ProtectedRoute>
             } />
             
             {/* Passenger routes */}
             <Route path="/passenger/dashboard" element={
               <ProtectedRoute allowedRoles={["passenger"]}>
-                <div>Passenger Dashboard - Coming in next phase</div>
+                <PassengerDashboard />
               </ProtectedRoute>
             } />
             <Route path="/passenger/search-flights" element={
               <ProtectedRoute allowedRoles={["passenger"]}>
-                <div>Search Flights - Coming in next phase</div>
+                <SearchFlights />
               </ProtectedRoute>
             } />
             <Route path="/passenger/reserve-seat" element={
               <ProtectedRoute allowedRoles={["passenger"]}>
-                <div>Reserve Seat - Coming in next phase</div>
+                <ReserveSeat />
               </ProtectedRoute>
             } />
             <Route path="/passenger/my-reservations" element={
               <ProtectedRoute allowedRoles={["passenger"]}>
-                <div>My Reservations - Coming in next phase</div>
+                <MyReservations />
               </ProtectedRoute>
             } />
             <Route path="/passenger/my-notifications" element={
               <ProtectedRoute allowedRoles={["passenger"]}>
-                <div>My Notifications - Coming in next phase</div>
+                <MyNotifications />
               </ProtectedRoute>
             } />
             
