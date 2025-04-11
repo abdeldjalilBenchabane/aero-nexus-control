@@ -30,7 +30,10 @@ interface FlightTableProps {
   searchable?: boolean;
   filterable?: boolean;
   selectable?: boolean;
+  showActions?: boolean;
   onSelect?: (flight: Flight) => void;
+  onEdit?: (flight: Flight) => void;
+  onDelete?: (flight: Flight) => void;
   emptyMessage?: string;
 }
 
