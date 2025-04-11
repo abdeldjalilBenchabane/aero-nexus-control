@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Pencil, Trash2, MapPin } from "lucide-react";
 
 interface FlightTableProps {
   flights: Flight[];
@@ -43,7 +44,10 @@ const FlightTable = ({
   searchable = false,
   filterable = false,
   selectable = false,
+  showActions = false,
   onSelect,
+  onEdit,
+  onDelete,
   emptyMessage = "No flights available"
 }: FlightTableProps) => {
   const [search, setSearch] = useState("");
@@ -136,13 +140,13 @@ const FlightTable = ({
               <TableHead>Arrival</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Gate</TableHead>
-              {(actions.length > 0 || selectable) && <TableHead>Actions</TableHead>}
+              {(actions.length > 0 || showActions || selectable) && <TableHead>Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredFlights.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={actions.length > 0 ? 8 : 7} className="text-center h-24 text-muted-foreground">
+                <TableCell colSpan={actions.length > 0 || showActions ? 8 : 7} className="text-center h-24 text-muted-foreground">
                   {emptyMessage}
                 </TableCell>
               </TableRow>
@@ -161,10 +165,10 @@ const FlightTable = ({
                     </Badge>
                   </TableCell>
                   <TableCell>{flight.gate || "—"}</TableCell>
-                  {(actions.length > 0 || selectable) && (
+                  {(actions.length > 0 || showActions || selectable) && (
                     <TableCell>
                       <div className="flex space-x-2">
-                        {actions.map((action, index) => (
+                        {actions.length > 0 && actions.map((action, index) => (
                           <Button
                             key={index}
                             variant={action.variant || "outline"}
@@ -177,7 +181,39 @@ const FlightTable = ({
                             {action.label}
                           </Button>
                         ))}
-                        {selectable && !actions.length && (
+                        
+                        {showActions && !actions.length && (
+                          <>
+                            {onEdit && (
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onEdit(flight);
+                                }}
+                              >
+                                <Pencil size={16} />
+                              </Button>
+                            )}
+                            
+                            {onDelete && (
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="text-red-500"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDelete(flight);
+                                }}
+                              >
+                                <Trash2 size={16} />
+                              </Button>
+                            )}
+                          </>
+                        )}
+                        
+                        {selectable && !actions.length && !showActions && (
                           <Button
                             variant="outline"
                             size="sm"

@@ -19,16 +19,34 @@ const COLUMNS = [1, 2, 3];
 const SeatMap = ({ 
   flight, 
   onSelectSeat, 
+  onSeatSelect,
   selectedSeat,
-  className 
+  className,
+  reservedSeats = []
 }: SeatMapProps) => {
   const [availableSeats, setAvailableSeats] = useState<string[]>([]);
   const [bookedSeats, setBookedSeats] = useState<string[]>([]);
   
   useEffect(() => {
-    setAvailableSeats(flight.availableSeats);
-    setBookedSeats(flight.bookedSeats.map(seat => seat.seatId));
-  }, [flight]);
+    if (flight) {
+      setAvailableSeats(flight.availableSeats);
+      setBookedSeats(flight.bookedSeats.map(seat => seat.seatId));
+    } else if (reservedSeats.length > 0) {
+      // If no flight is provided but reservedSeats are, use those
+      setBookedSeats(reservedSeats);
+      
+      // Create a list of all possible seats
+      const allSeats: string[] = [];
+      ROWS.forEach(row => {
+        COLUMNS.forEach(col => {
+          allSeats.push(`${row}${col}`);
+        });
+      });
+      
+      // Available seats are those not in reservedSeats
+      setAvailableSeats(allSeats.filter(seat => !reservedSeats.includes(seat)));
+    }
+  }, [flight, reservedSeats]);
 
   const isSeatAvailable = (seatId: string) => {
     return availableSeats.includes(seatId);
@@ -47,6 +65,15 @@ const SeatMap = ({
     if (isSeatBooked(seatId)) return "booked";
     if (isSeatAvailable(seatId)) return "available";
     return "unavailable";
+  };
+
+  const handleSeatClick = (seatId: string) => {
+    if (onSelectSeat) {
+      onSelectSeat(seatId);
+    }
+    if (onSeatSelect) {
+      onSeatSelect(seatId);
+    }
   };
 
   return (
@@ -87,7 +114,7 @@ const SeatMap = ({
                       status === "unavailable" && "bg-gray-200 cursor-not-allowed"
                     )}
                     disabled={status === "booked" || status === "unavailable"}
-                    onClick={() => onSelectSeat(seatId)}
+                    onClick={() => handleSeatClick(seatId)}
                     variant="ghost"
                   >
                     {seatId}

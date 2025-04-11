@@ -37,8 +37,14 @@ const Home = () => {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Hero Section */}
-      <div className="flex-1 flex flex-col justify-center items-center p-8 bg-gradient-to-b from-aviation-blue-light to-white">
-        <div className="max-w-4xl mx-auto text-center">
+      <div className="flex-1 flex flex-col justify-center items-center p-8 bg-gradient-to-b from-aviation-blue-light to-white relative overflow-hidden">
+        {/* Background airport images */}
+        <div className="absolute inset-0 opacity-10 z-0">
+          <div className="absolute top-0 left-0 w-full h-full bg-no-repeat bg-cover bg-center" 
+               style={{backgroundImage: "url('/images/airport-terminal.jpg')"}}></div>
+        </div>
+        
+        <div className="max-w-4xl mx-auto text-center relative z-10">
           <Logo size="lg" className="justify-center mb-8" />
           
           <h1 className="text-5xl font-bold mb-6 text-aviation-navy-dark">
@@ -55,8 +61,41 @@ const Home = () => {
         </div>
       </div>
 
+      {/* Images Section */}
+      <div className="py-12 px-8 bg-white">
+        <h2 className="text-3xl font-bold text-center mb-8 text-aviation-navy-dark">
+          Our Modern Airport
+        </h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <div className="rounded-lg overflow-hidden shadow-lg h-64">
+            <img 
+              src="/images/airport-exterior.jpg" 
+              alt="Modern airport exterior" 
+              className="w-full h-full object-cover"
+            />
+          </div>
+          
+          <div className="rounded-lg overflow-hidden shadow-lg h-64">
+            <img 
+              src="/images/terminal-interior.jpg" 
+              alt="Terminal interior" 
+              className="w-full h-full object-cover"
+            />
+          </div>
+          
+          <div className="rounded-lg overflow-hidden shadow-lg h-64">
+            <img 
+              src="/images/runway.jpg" 
+              alt="Airport runway" 
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Features Section */}
-      <div className="py-16 px-8 bg-white">
+      <div className="py-16 px-8 bg-gray-50">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-12 text-aviation-navy-dark">
             Key Features

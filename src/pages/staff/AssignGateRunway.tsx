@@ -1,23 +1,75 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PageLayout from "@/components/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { flights, gates, runways } from "@/lib/db";
+import { Flight, Gate, Runway } from "@/lib/db";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { AlertCircle, Calendar as CalendarIcon, Check } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useToast } from "@/components/ui/use-toast";
 
 const AssignGateRunway = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedFlight, setSelectedFlight] = useState("");
   const [selectedGate, setSelectedGate] = useState("");
   const [selectedRunway, setSelectedRunway] = useState("");
+  const [flights, setFlights] = useState<Flight[]>([]);
+  const [gates, setGates] = useState<Gate[]>([]);
+  const [runways, setRunways] = useState<Runway[]>([]);
+  const [availableGates, setAvailableGates] = useState<Gate[]>([]);
+  const [availableRunways, setAvailableRunways] = useState<Runway[]>([]);
+  const [success, setSuccess] = useState(false);
+  const { toast } = useToast();
+
+  // Fetch flights, gates, and runways on component mount
+  useEffect(() => {
+    // In a real app, this would fetch from the API
+    fetch("http://localhost:3001/api/flights")
+      .then(response => response.json())
+      .then(data => {
+        setFlights(data);
+      })
+      .catch(error => {
+        console.error("Error fetching flights:", error);
+        // Fallback to mock data
+        import("@/lib/db").then(({ flights }) => {
+          setFlights(flights);
+        });
+      });
+
+    fetch("http://localhost:3001/api/gates")
+      .then(response => response.json())
+      .then(data => {
+        setGates(data);
+      })
+      .catch(error => {
+        console.error("Error fetching gates:", error);
+        // Fallback to mock data
+        import("@/lib/db").then(({ gates }) => {
+          setGates(gates);
+        });
+      });
+
+    fetch("http://localhost:3001/api/runways")
+      .then(response => response.json())
+      .then(data => {
+        setRunways(data);
+      })
+      .catch(error => {
+        console.error("Error fetching runways:", error);
+        // Fallback to mock data
+        import("@/lib/db").then(({ runways }) => {
+          setRunways(runways);
+        });
+      });
+  }, []);
 
   // Filter flights for the selected date
   const availableFlights = flights.filter(flight => {
@@ -39,24 +91,80 @@ const AssignGateRunway = () => {
     .filter(flight => flight.runway)
     .map(flight => flight.runway);
 
-  // Filter available gates and runways
-  const availableGates = gates.filter(gate => !assignedGates.includes(gate.id));
-  const availableRunways = runways.filter(runway => !assignedRunways.includes(runway.id));
+  // Update available gates and runways when date or flight changes
+  useEffect(() => {
+    // In a real app, this would make an API call with the date
+    setAvailableGates(gates.filter(gate => !assignedGates.includes(gate.name)));
+    setAvailableRunways(runways.filter(runway => !assignedRunways.includes(runway.name)));
+  }, [selectedDate, selectedFlight, gates, runways, assignedGates, assignedRunways]);
 
   const handleAssign = () => {
     if (selectedFlight && (selectedGate || selectedRunway)) {
-      console.log('Assigning:', {
-        flight: selectedFlight,
-        gate: selectedGate || 'Not assigned',
-        runway: selectedRunway || 'Not assigned'
-      });
-      // In a real app, this would make an API call to update the assignment
+      const promises = [];
+      
+      if (selectedGate) {
+        promises.push(
+          fetch(`http://localhost:3001/api/flights/${selectedFlight}/gate`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ gateId: selectedGate }),
+          })
+        );
+      }
+      
+      if (selectedRunway) {
+        promises.push(
+          fetch(`http://localhost:3001/api/flights/${selectedFlight}/runway`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ runwayId: selectedRunway }),
+          })
+        );
+      }
+
+      // Execute all promises
+      Promise.all(promises)
+        .then(() => {
+          toast({
+            title: "Resources assigned",
+            description: "Gate and runway assigned successfully",
+          });
+          
+          setSuccess(true);
+          setTimeout(() => setSuccess(false), 3000);
+          
+          // Reset selections
+          setSelectedGate("");
+          setSelectedRunway("");
+        })
+        .catch(error => {
+          console.error("Error assigning resources:", error);
+          toast({
+            title: "Assignment failed",
+            description: "There was an error assigning resources",
+            variant: "destructive",
+          });
+        });
     }
   };
 
   return (
     <PageLayout title="Assign Gates & Runways">
       <div className="space-y-6">
+        {success && (
+          <Alert className="bg-green-50 border-green-200">
+            <Check className="h-4 w-4 text-green-600" />
+            <AlertTitle className="text-green-800">Success</AlertTitle>
+            <AlertDescription className="text-green-700">
+              Gate and runway have been assigned successfully.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <Card>
           <CardHeader>
             <CardTitle>Select Date</CardTitle>
@@ -164,6 +272,50 @@ const AssignGateRunway = () => {
               >
                 Assign
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Assigned Resources */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Current Assignments</CardTitle>
+            <CardDescription>Flights with assigned gates and runways for the selected date</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="border rounded-md">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Flight</th>
+                    <th className="text-left p-2">Route</th>
+                    <th className="text-left p-2">Departure</th>
+                    <th className="text-left p-2">Gate</th>
+                    <th className="text-left p-2">Runway</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {availableFlights.filter(flight => flight.gate || flight.runway).length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="text-center p-4 text-muted-foreground">
+                        No assignments for the selected date
+                      </td>
+                    </tr>
+                  ) : (
+                    availableFlights
+                      .filter(flight => flight.gate || flight.runway)
+                      .map(flight => (
+                        <tr key={flight.id} className="border-b">
+                          <td className="p-2 font-medium">{flight.flightNumber}</td>
+                          <td className="p-2">{flight.origin} → {flight.destination}</td>
+                          <td className="p-2">{new Date(flight.departureTime).toLocaleTimeString()}</td>
+                          <td className="p-2">{flight.gate || "—"}</td>
+                          <td className="p-2">{flight.runway || "—"}</td>
+                        </tr>
+                      ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>

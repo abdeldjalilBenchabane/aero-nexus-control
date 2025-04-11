@@ -1,28 +1,49 @@
 
 import { useEffect, useState } from "react";
-import { Bell, Info, AlertTriangle, CheckCircle } from "lucide-react";
+import { Bell, Info, AlertTriangle, CheckCircle, Check, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Notification, getNotificationsForUser } from "@/lib/db";
+import { Notification } from "@/lib/db";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { notificationApi } from "@/lib/api";
 
 interface NotificationListProps {
   limit?: number;
   showIcon?: boolean;
   className?: string;
+  showControls?: boolean;
+  onMarkAllRead?: () => void;
 }
 
 const NotificationList = ({ 
   limit,
-  showIcon = true, 
+  showIcon = true,
+  showControls = false,
+  onMarkAllRead,
   className
 }: NotificationListProps) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [readNotifications, setReadNotifications] = useState<string[]>([]);
   const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
-      const userNotifications = getNotificationsForUser(user.id);
-      setNotifications(userNotifications);
+      // Fetch notifications from API
+      fetch(`http://localhost:3001/api/notifications/user/${user.id}`)
+        .then(response => response.json())
+        .then(data => {
+          setNotifications(data);
+        })
+        .catch(error => {
+          console.error("Error fetching notifications:", error);
+          // Fallback to mock data
+          import("@/lib/db").then(({ getNotificationsForUser }) => {
+            const userNotifications = getNotificationsForUser(user.id);
+            setNotifications(userNotifications);
+          });
+        });
     }
   }, [user]);
 
@@ -74,6 +95,18 @@ const NotificationList = ({
     }
   };
 
+  const markAsRead = (id: string) => {
+    if (!readNotifications.includes(id)) {
+      setReadNotifications([...readNotifications, id]);
+    }
+  };
+  
+  const markAllAsRead = () => {
+    const allIds = notifications.map(n => n.id);
+    setReadNotifications([...new Set([...readNotifications, ...allIds])]);
+    if (onMarkAllRead) onMarkAllRead();
+  };
+
   const displayNotifications = limit 
     ? notifications.slice(0, limit) 
     : notifications;
@@ -88,30 +121,88 @@ const NotificationList = ({
 
   return (
     <div className={cn("space-y-4", className)}>
-      {displayNotifications.map((notification) => (
-        <div 
-          key={notification.id}
-          className="flex items-start gap-3 p-3 rounded-lg border bg-card"
-        >
-          {showIcon && (
-            <div className="flex-shrink-0 mt-1">
-              {getNotificationIcon(notification)}
-            </div>
-          )}
-          
-          <div className="flex-1 min-w-0">
-            <p className="text-sm text-foreground">{notification.message}</p>
-            <div className="mt-1 flex items-center gap-3">
-              <p className="text-xs text-muted-foreground">
-                {getTimeAgo(notification.timestamp)}
-              </p>
-              <p className="text-xs text-muted-foreground capitalize">
-                From: {notification.sender.role}
-              </p>
-            </div>
-          </div>
+      {showControls && (
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" onClick={markAllAsRead}>
+            <Check className="h-4 w-4 mr-2" />
+            Mark All Read
+          </Button>
         </div>
-      ))}
+      )}
+      
+      {displayNotifications.map((notification) => {
+        const isRead = readNotifications.includes(notification.id);
+        
+        return (
+          <Card 
+            key={notification.id}
+            className={cn(
+              "overflow-hidden relative",
+              isRead ? 'bg-muted/50' : 'bg-card'
+            )}
+          >
+            {!isRead && (
+              <div className="absolute top-0 right-0 w-3 h-3 bg-primary rounded-full m-2"></div>
+            )}
+            
+            <CardContent className="p-4">
+              <div className="flex justify-between flex-wrap gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="font-normal">
+                    {notification.sender.role.charAt(0).toUpperCase() + notification.sender.role.slice(1)}
+                  </Badge>
+                  
+                  {notification.flightId && (
+                    <Badge variant="secondary" className="font-normal">
+                      Flight related
+                    </Badge>
+                  )}
+                </div>
+                
+                <div className="text-sm text-muted-foreground">
+                  {getTimeAgo(notification.timestamp)}
+                </div>
+              </div>
+              
+              <div className="flex gap-3">
+                {showIcon && (
+                  <div className="flex-shrink-0 mt-1">
+                    {getNotificationIcon(notification)}
+                  </div>
+                )}
+                
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-foreground">{notification.message}</p>
+                </div>
+              </div>
+              
+              {showControls && (
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    <span>Delete</span>
+                  </Button>
+                  
+                  {!isRead && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => markAsRead(notification.id)}
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      <span>Mark as Read</span>
+                    </Button>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 };
