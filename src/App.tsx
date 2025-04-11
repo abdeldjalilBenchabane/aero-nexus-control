@@ -11,8 +11,33 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
-// We'll be creating these pages in the next steps
-// This is just the routing structure for now
+// Admin pages
+import AdminDashboard from "./pages/admin/Dashboard";
+import ManageUsers from "./pages/admin/ManageUsers";
+import Reports from "./pages/admin/Reports";
+import SystemSettings from "./pages/admin/SystemSettings";
+import AdminSendNotification from "./pages/admin/SendNotification";
+
+// Staff pages
+import StaffDashboard from "./pages/staff/Dashboard";
+import ManageFlights from "./pages/staff/ManageFlights";
+import AssignGateRunway from "./pages/staff/AssignGateRunway";
+import RealTimeFlights from "./pages/staff/RealTimeFlights";
+import StaffSendNotification from "./pages/staff/SendNotification";
+
+// Airline pages
+import AirlineDashboard from "./pages/airline/Dashboard";
+import MyFlights from "./pages/airline/MyFlights";
+import DelayManager from "./pages/airline/DelayManager";
+import PassengerNotify from "./pages/airline/PassengerNotify";
+
+// Passenger pages
+import PassengerDashboard from "./pages/passenger/Dashboard";
+import SearchFlights from "./pages/passenger/SearchFlights";
+import ReserveSeat from "./pages/passenger/ReserveSeat";
+import MyReservations from "./pages/passenger/MyReservations";
+import MyNotifications from "./pages/passenger/MyNotifications";
+import FlightDetails from "./pages/passenger/FlightDetails";
 
 const queryClient = new QueryClient();
 
