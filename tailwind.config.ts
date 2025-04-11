@@ -61,7 +61,30 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+                // Aviation-themed colors
+                aviation: {
+                    blue: {
+                        light: '#E0F7FF',
+                        DEFAULT: '#2D9CDB',
+                        dark: '#1C6B98'
+                    },
+                    navy: {
+                        light: '#E2E8F0',
+                        DEFAULT: '#2C3E50',
+                        dark: '#0F172A'
+                    },
+                    accent: {
+                        green: '#4CAF50',
+                        yellow: '#F2C94C',
+                        red: '#EB5757'
+                    },
+                    gray: {
+                        light: '#F9FAFB',
+                        DEFAULT: '#E5E7EB',
+                        dark: '#9CA3AF'
+                    }
+                }
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
