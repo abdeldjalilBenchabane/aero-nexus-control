@@ -176,7 +176,7 @@ const FlightDetails = () => {
         
         {/* Alert for delayed or cancelled flights */}
         {(isDelayed || isCancelled) && (
-          <Alert variant={isCancelled ? "destructive" : "warning"}>
+          <Alert variant={isCancelled ? "destructive" : "destructive"}>
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>
               {isCancelled ? "Flight Cancelled" : "Flight Delayed"}

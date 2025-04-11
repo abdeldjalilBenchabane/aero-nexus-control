@@ -39,9 +39,11 @@ const MyReservations = () => {
         destination: "Unknown",
         departureTime: new Date().toISOString(),
         arrivalTime: new Date().toISOString(),
-        status: "unknown",
+        status: "scheduled",
         gate: null,
-        runway: null
+        runway: null,
+        availableSeats: [],
+        bookedSeats: []
       }
     };
   });

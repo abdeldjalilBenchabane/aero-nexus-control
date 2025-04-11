@@ -4,13 +4,13 @@ import PageLayout from "@/components/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { flights } from "@/lib/db";
 import { useAuth } from "@/contexts/AuthContext";
-import { NotificationForm } from "@/components/NotificationForm";
+import NotificationForm from "@/components/NotificationForm";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
 
 const PassengerNotify = () => {
   const { user } = useAuth();
-  const airlineCompany = user?.airline || "Unknown Airline"; // In a real app, this would come from the user's profile
+  const airlineCompany = user?.airlineId || "Unknown Airline"; // In a real app, this would come from the user's profile
   
   // Filter flights that belong to this airline
   const airlineFlights = flights.filter(flight => flight.airline === airlineCompany);

@@ -18,6 +18,9 @@ import { users } from "@/lib/db";
 
 interface NotificationFormProps {
   allowTargetRole?: boolean;
+  allowedTargets?: string[];
+  flightFilter?: (flight: Flight) => boolean;
+  onSendNotification?: (data: any) => Promise<any>;
   onSuccess?: () => void;
 }
 

@@ -7,9 +7,11 @@ interface StatisticsCardProps {
   title: string;
   value: string | number;
   icon: ReactNode;
+  description?: string;
   trend?: "up" | "down" | "neutral";
   trendValue?: string;
   className?: string;
+  trending?: "positive" | "negative" | "neutral";
 }
 
 const StatisticsCard = ({ 

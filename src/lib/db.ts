@@ -63,6 +63,8 @@ export interface Notification {
   };
   targetType: "all" | "role" | "flight";
   targetId?: string; // Role name or flight ID
+  flightId?: string; // Related flight ID for notifications about flights
+  senderRole?: string; // Role of the sender for display purposes
 }
 
 // Mock data
@@ -438,6 +440,70 @@ export const addNotification = (notification: Omit<Notification, "id">): Notific
   notifications.push(newNotification);
   return newNotification;
 };
+
+// Reservation interface
+export interface Reservation {
+  id: string;
+  flightId: string;
+  passengerId: string;
+  seatId: string;
+  timestamp: string;
+  status: "confirmed" | "cancelled" | "checked-in";
+  userId?: string; // Legacy field for compatibility
+  seat?: string;   // Legacy field for compatibility
+}
+
+// Mock reservations data
+export const reservations: Reservation[] = [
+  {
+    id: "res1",
+    flightId: "flight1",
+    passengerId: "4",
+    seatId: "A1",
+    timestamp: "2023-06-10T12:00:00Z",
+    status: "confirmed"
+  },
+  {
+    id: "res2",
+    flightId: "flight2",
+    passengerId: "5",
+    seatId: "A2",
+    timestamp: "2023-06-11T14:30:00Z",
+    status: "confirmed"
+  },
+  {
+    id: "res3",
+    flightId: "flight2",
+    passengerId: "5",
+    seatId: "B2",
+    timestamp: "2023-06-11T14:35:00Z",
+    status: "confirmed"
+  },
+  {
+    id: "res4",
+    flightId: "flight3",
+    passengerId: "4",
+    seatId: "A1",
+    timestamp: "2023-06-12T09:15:00Z",
+    status: "confirmed"
+  },
+  {
+    id: "res5",
+    flightId: "flight3",
+    passengerId: "4",
+    seatId: "B1",
+    timestamp: "2023-06-12T09:20:00Z",
+    status: "confirmed"
+  },
+  {
+    id: "res6",
+    flightId: "flight3",
+    passengerId: "4",
+    seatId: "C1",
+    timestamp: "2023-06-12T09:25:00Z",
+    status: "confirmed"
+  }
+];
 
 // Book a seat on a flight
 export const bookSeat = (

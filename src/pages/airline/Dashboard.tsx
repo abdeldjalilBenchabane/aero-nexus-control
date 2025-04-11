@@ -11,7 +11,7 @@ import { Plane, Users, Clock, AlertTriangle, CheckCircle, Bell } from "lucide-re
 
 const AirlineDashboard = () => {
   const { user } = useAuth();
-  const airlineCompany = user?.airline || "Unknown Airline"; // In a real app, this would come from the user's profile
+  const airlineCompany = user?.airlineId || "Unknown Airline"; // In a real app, this would come from the user's profile
   
   // Filter flights that belong to this airline
   const airlineFlights = flights.filter(flight => flight.airline === airlineCompany);

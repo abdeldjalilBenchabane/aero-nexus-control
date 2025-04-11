@@ -5,10 +5,12 @@ import { cn } from "@/lib/utils";
 import { Flight } from "@/lib/db";
 
 interface SeatMapProps {
-  flight: Flight;
-  onSelectSeat: (seatId: string) => void;
+  flight?: Flight;
+  onSelectSeat?: (seatId: string) => void;
+  onSeatSelect?: (seatId: string) => void;
   selectedSeat?: string;
   className?: string;
+  reservedSeats?: string[];
 }
 
 const ROWS = ["A", "B", "C", "D", "E", "F"];
