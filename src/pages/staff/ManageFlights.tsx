@@ -12,6 +12,9 @@ import FlightTable from "@/components/FlightTable";
 import { Flight, Gate, Runway } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 
+// Flight status type helper
+type FlightStatus = "scheduled" | "boarding" | "departed" | "arrived" | "delayed" | "cancelled";
+
 const ManageFlights = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [flights, setFlights] = useState<Flight[]>([]);
@@ -24,7 +27,7 @@ const ManageFlights = () => {
     destination: "",
     departureTime: "",
     arrivalTime: "",
-    status: "scheduled"
+    status: "scheduled" as FlightStatus
   });
   const [isAssignGateOpen, setIsAssignGateOpen] = useState(false);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
@@ -41,15 +44,20 @@ const ManageFlights = () => {
     fetch("http://localhost:3001/api/flights")
       .then(response => response.json())
       .then(data => {
-        setFlights(data);
-        setFilteredFlights(data);
+        // Ensure proper typing
+        const typedFlights = data.map((flight: any) => ({
+          ...flight,
+          status: flight.status as FlightStatus
+        }));
+        setFlights(typedFlights);
+        setFilteredFlights(typedFlights);
       })
       .catch(error => {
         console.error("Error fetching flights:", error);
         // Fallback to mock data if API fails
         import("@/lib/db").then(({ flights }) => {
-          setFlights(flights as Flight[]);
-          setFilteredFlights(flights as Flight[]);
+          setFlights(flights);
+          setFilteredFlights(flights);
         });
       });
   }, []);
@@ -81,7 +89,7 @@ const ManageFlights = () => {
 
   // Handle status selection
   const handleStatusChange = (value: string) => {
-    setNewFlight(prev => ({ ...prev, status: value as Flight["status"] }));
+    setNewFlight(prev => ({ ...prev, status: value as FlightStatus }));
   };
 
   // Add new flight
@@ -90,10 +98,10 @@ const ManageFlights = () => {
     const flightData = {
       ...newFlight,
       id: `flight${Date.now()}`, // Generate a unique ID
-      status: newFlight.status as "scheduled" | "boarding" | "departed" | "arrived" | "delayed" | "cancelled",
+      status: newFlight.status,
       availableSeats: ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"],
-      bookedSeats: []
-    };
+      bookedSeats: [] as { seatId: string; passengerId: string }[]
+    } as Flight;
 
     // In a real application, this would make an API call
     fetch("http://localhost:3001/api/flights", {
@@ -105,8 +113,12 @@ const ManageFlights = () => {
     })
       .then(response => response.json())
       .then(data => {
-        // Add the new flight to the state
-        const updatedFlights = [...flights, data];
+        // Add the new flight to the state with proper typing
+        const typedFlight = {
+          ...data,
+          status: data.status as FlightStatus
+        };
+        const updatedFlights = [...flights, typedFlight];
         setFlights(updatedFlights);
         setFilteredFlights(updatedFlights);
         setIsAddFlightOpen(false);
@@ -119,13 +131,13 @@ const ManageFlights = () => {
           destination: "",
           departureTime: "",
           arrivalTime: "",
-          status: "scheduled"
+          status: "scheduled" as FlightStatus
         });
       })
       .catch(error => {
         console.error("Error adding flight:", error);
         // Fallback if API fails - just add to local state
-        const updatedFlights = [...flights, flightData as Flight];
+        const updatedFlights = [...flights, flightData];
         setFlights(updatedFlights);
         setFilteredFlights(updatedFlights);
         setIsAddFlightOpen(false);
@@ -154,7 +166,8 @@ const ManageFlights = () => {
 
     const updatedFlight = {
       ...selectedFlight,
-      ...newFlight
+      ...newFlight,
+      status: newFlight.status as FlightStatus // Ensure correct typing
     };
 
     // In a real application, this would make an API call
@@ -167,9 +180,13 @@ const ManageFlights = () => {
     })
       .then(response => response.json())
       .then(data => {
-        // Update the flight in the state
+        // Update the flight in the state with proper typing
+        const typedFlight = {
+          ...data,
+          status: data.status as FlightStatus
+        };
         const updatedFlights = flights.map(f => 
-          f.id === selectedFlight.id ? data : f
+          f.id === selectedFlight.id ? typedFlight : f
         );
         setFlights(updatedFlights);
         setFilteredFlights(updatedFlights);
@@ -328,7 +345,7 @@ const ManageFlights = () => {
                   destination: "",
                   departureTime: "",
                   arrivalTime: "",
-                  status: "scheduled"
+                  status: "scheduled" as FlightStatus
                 });
               }
             }}>

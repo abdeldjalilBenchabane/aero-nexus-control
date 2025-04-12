@@ -33,6 +33,9 @@ import { Label } from "@/components/ui/label";
 import { users as mockUsers, User } from "@/lib/db";
 import { useToast } from "@/components/ui/use-toast";
 
+// Type helper for user role
+type UserRole = "admin" | "staff" | "airline" | "passenger";
+
 const ManageUsers = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [users, setUsers] = useState<User[]>([]);
@@ -46,7 +49,7 @@ const ManageUsers = () => {
     firstName: "",
     lastName: "",
     email: "",
-    role: "passenger"
+    role: "passenger" as UserRole
   });
   const { toast } = useToast();
 
@@ -56,14 +59,19 @@ const ManageUsers = () => {
     fetch("http://localhost:3001/api/users")
       .then(response => response.json())
       .then(data => {
-        setUsers(data);
-        setFilteredUsers(data);
+        // Ensure data has the correct role type
+        const typedUsers = data.map((user: any) => ({
+          ...user,
+          role: user.role as UserRole
+        }));
+        setUsers(typedUsers);
+        setFilteredUsers(typedUsers);
       })
       .catch(error => {
         console.error("Error fetching users:", error);
         // Fallback to mock data
-        setUsers(mockUsers as User[]);
-        setFilteredUsers(mockUsers as User[]);
+        setUsers(mockUsers);
+        setFilteredUsers(mockUsers);
       });
   }, []);
 
@@ -94,7 +102,7 @@ const ManageUsers = () => {
 
   // Handle role selection
   const handleRoleChange = (value: string) => {
-    setNewUser(prev => ({ ...prev, role: value as User["role"] }));
+    setNewUser(prev => ({ ...prev, role: value as UserRole }));
   };
 
   // Add new user
@@ -119,8 +127,12 @@ const ManageUsers = () => {
     })
       .then(response => response.json())
       .then(data => {
-        // Add the new user to the state
-        const updatedUsers = [...users, data];
+        // Add the new user to the state with proper typing
+        const typedUser = {
+          ...data,
+          role: data.role as UserRole
+        };
+        const updatedUsers = [...users, typedUser];
         setUsers(updatedUsers);
         setFilteredUsers(updatedUsers);
         
@@ -136,20 +148,20 @@ const ManageUsers = () => {
           firstName: "",
           lastName: "",
           email: "",
-          role: "passenger"
+          role: "passenger" as UserRole
         });
       })
       .catch(error => {
         console.error("Error adding user:", error);
         
         // Fallback if API fails - just add to local state
-        const newUserData = {
+        const newUserData: User = {
           ...newUser,
           id: `user${Date.now()}`,
-          role: newUser.role as "admin" | "staff" | "airline" | "passenger"
+          role: newUser.role
         };
         
-        const updatedUsers = [...users, newUserData as User];
+        const updatedUsers = [...users, newUserData];
         setUsers(updatedUsers);
         setFilteredUsers(updatedUsers);
         
@@ -165,7 +177,7 @@ const ManageUsers = () => {
           firstName: "",
           lastName: "",
           email: "",
-          role: "passenger"
+          role: "passenger" as UserRole
         });
       });
   };
@@ -218,9 +230,13 @@ const ManageUsers = () => {
     })
       .then(response => response.json())
       .then(data => {
-        // Update the user in the state
+        // Update the user in the state with proper typing
+        const typedData = {
+          ...data,
+          role: data.role as UserRole
+        };
         const updatedUsers = users.map(u => 
-          u.id === selectedUser.id ? { ...u, ...data } : u
+          u.id === selectedUser.id ? { ...u, ...typedData } : u
         );
         setUsers(updatedUsers);
         setFilteredUsers(updatedUsers);
@@ -239,7 +255,7 @@ const ManageUsers = () => {
         
         // Fallback if API fails - just update local state
         const updatedUsers = users.map(u => 
-          u.id === selectedUser.id ? { ...u, ...updateData } : u
+          u.id === selectedUser.id ? { ...u, ...updateData, role: updateData.role as UserRole } : u
         );
         setUsers(updatedUsers);
         setFilteredUsers(updatedUsers);
@@ -315,7 +331,7 @@ const ManageUsers = () => {
                   firstName: "",
                   lastName: "",
                   email: "",
-                  role: "passenger"
+                  role: "passenger" as UserRole
                 });
               }
             }}
