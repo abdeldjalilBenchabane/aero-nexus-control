@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,7 +26,7 @@ import {
   GanttChartSquare,
   LandmarkIcon
 } from "lucide-react";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -79,11 +78,10 @@ const NavigationSidebar = ({ activePath }: NavigationSidebarProps) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   
   const toggleSidebar = () => setCollapsed(!collapsed);
 
-  // Define navigation items by role
   const adminNav = [
     { path: "/admin/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
     { path: "/admin/users", label: "Users", icon: <Users size={18} /> },
@@ -117,7 +115,6 @@ const NavigationSidebar = ({ activePath }: NavigationSidebarProps) => {
     { path: "/passenger/flight-status", label: "Flight Status", icon: <GanttChartSquare size={18} /> },
   ];
 
-  // Select the appropriate navigation items based on user role
   let navItems: { path: string; label: string; icon: React.ReactNode }[] = [];
   
   switch (user?.role) {
@@ -142,17 +139,14 @@ const NavigationSidebar = ({ activePath }: NavigationSidebarProps) => {
     navigate("/login");
   };
 
-  // If mobile and sidebar is not collapsed, use a full-width sidebar with overlay
   if (isMobile && !collapsed) {
     return (
       <>
-        {/* Overlay for mobile sidebar */}
         <div 
           className="fixed inset-0 bg-black/50 z-40"
           onClick={toggleSidebar}
         />
         
-        {/* Mobile sidebar */}
         <div className="fixed h-screen w-64 bg-sidebar z-50 flex flex-col shadow-xl animate-in slide-in-from-left">
           <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
             <Logo />
@@ -196,7 +190,6 @@ const NavigationSidebar = ({ activePath }: NavigationSidebarProps) => {
           </div>
         </div>
         
-        {/* Toggle button for collapsed mobile sidebar */}
         <Button 
           variant="outline" 
           size="icon"
