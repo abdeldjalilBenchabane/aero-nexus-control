@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlaneTakeoff, CheckCircle } from "lucide-react";
+import { PlaneTakeoff, CheckCircle, Database } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DatabaseConnectionTest from "@/components/DatabaseConnectionTest";
 
@@ -23,14 +22,13 @@ const Login = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user was redirected from registration
     const params = new URLSearchParams(location.search);
     if (params.get('registered') === 'true') {
       setRegistrationSuccess(true);
       toast({
         title: "Account created successfully",
         description: "You can now log in with your credentials",
-        variant: "default" // Changed from "success" to "default"
+        variant: "default"
       });
     }
   }, [location, toast]);
@@ -44,7 +42,6 @@ const Login = () => {
       const success = await login(username, password);
       
       if (success) {
-        // Redirect based on user role
         const userObj = JSON.parse(localStorage.getItem("user") || "{}");
         
         switch (userObj.role) {
@@ -138,13 +135,20 @@ const Login = () => {
                 </div>
               )}
               
-              {/* Database connection test */}
               <div className="pt-2">
                 <h3 className="text-sm font-medium mb-2">Database Connection Status</h3>
                 <DatabaseConnectionTest />
+                <div className="mt-2 text-center">
+                  <Link 
+                    to="/test" 
+                    className="inline-flex items-center text-sm text-blue-600 hover:underline"
+                  >
+                    <Database className="h-3 w-3 mr-1" />
+                    Go to Database Test Page
+                  </Link>
+                </div>
               </div>
               
-              {/* Demo account information */}
               <div className="rounded-md bg-blue-50 p-4">
                 <div className="flex">
                   <div className="flex-shrink-0">
