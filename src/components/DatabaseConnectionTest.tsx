@@ -20,7 +20,7 @@ const DatabaseConnectionTest = () => {
         setConnectionStatus('success');
       } else {
         setConnectionStatus('failed');
-        setErrorMessage(data.message);
+        setErrorMessage(data.message || 'Unknown database error');
       }
     } catch (error) {
       setConnectionStatus('failed');
