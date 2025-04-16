@@ -29,7 +29,7 @@ const Login = () => {
       toast({
         title: "Account created successfully",
         description: "You can now log in with your credentials",
-        variant: "success"
+        variant: "default" // Changed from "success" to "default"
       });
     }
   }, [location, toast]);
