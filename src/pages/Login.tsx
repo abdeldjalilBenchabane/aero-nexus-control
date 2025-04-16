@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlaneTakeoff, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import DatabaseConnectionTest from "@/components/DatabaseConnectionTest";
 
 const Login = () => {
   const [username, setUsername] = useState("");
@@ -136,6 +137,12 @@ const Login = () => {
                   {error}
                 </div>
               )}
+              
+              {/* Database connection test */}
+              <div className="pt-2">
+                <h3 className="text-sm font-medium mb-2">Database Connection Status</h3>
+                <DatabaseConnectionTest />
+              </div>
               
               {/* Demo account information */}
               <div className="rounded-md bg-blue-50 p-4">

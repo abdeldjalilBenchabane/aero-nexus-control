@@ -13,8 +13,24 @@ app.use(express.json());
 
 // Test database connection on startup
 (async function() {
-  await testConnection();
+  const connected = await testConnection();
+  console.log('Database connection test result:', connected ? 'CONNECTED' : 'FAILED TO CONNECT');
 })();
+
+// Add a test endpoint to check database connection
+app.get('/api/test-db-connection', async (req, res) => {
+  try {
+    const connected = await testConnection();
+    if (connected) {
+      res.json({ success: true, message: 'Successfully connected to database' });
+    } else {
+      res.status(500).json({ success: false, message: 'Failed to connect to database' });
+    }
+  } catch (error) {
+    console.error('Error testing database connection:', error);
+    res.status(500).json({ success: false, message: 'Error testing database connection', error: error.message });
+  }
+});
 
 // API endpoints
 const apiRouter = express.Router();
@@ -1555,4 +1571,5 @@ if (process.env.NODE_ENV === 'production') {
 // Start server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
+  console.log(`Database connection test endpoint: http://localhost:${port}/api/test-db-connection`);
 });
