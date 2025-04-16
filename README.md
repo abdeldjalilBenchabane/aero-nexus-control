@@ -1,73 +1,141 @@
-# Welcome to your Lovable project
 
-## Project info
+# Airport Flight Management System
 
-**URL**: https://lovable.dev/projects/8c652409-7a3e-44d5-a945-b02d99d7ac0f
+A comprehensive flight management system for airports with role-based access control and real-time updates.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- Multi-role system: Admin, Staff, Airline, and Passenger
+- Real-time flight tracking and management
+- Gate and runway assignment
+- Seat reservation system
+- Notification system for flight updates
+- Responsive UI with Tailwind CSS
 
-**Use Lovable**
+## Technology Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/8c652409-7a3e-44d5-a945-b02d99d7ac0f) and start prompting.
+- **Frontend**: React, TypeScript, Tailwind CSS, Shadcn UI
+- **Backend**: Express.js
+- **Database**: MySQL
 
-Changes made via Lovable will be committed automatically to this repo.
+## Setup Instructions
 
-**Use your preferred IDE**
+### 1. Database Setup
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+1. Install MySQL and create a database named `airport_db`:
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```sql
+CREATE DATABASE airport_db;
+```
 
-Follow these steps:
+2. Use the schema script to set up the database structure:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+```bash
+mysql -u root -p airport_db < server/db/schema.sql
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Or run the SQL commands directly in phpMyAdmin.
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 2. Backend Setup
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+1. Navigate to the server directory:
+
+```bash
+cd server
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Start the server:
+
+```bash
+npm start
+```
+
+The server will run on http://localhost:3001 by default.
+
+### 3. Frontend Setup
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Start the development server:
+
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The application will be available at http://localhost:5173.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Default Users
 
-**Use GitHub Codespaces**
+The system comes with the following pre-configured users:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Admin
+- Email: admin@airport.com
+- Password: admin123
 
-## What technologies are used for this project?
+### Staff
+- Email: staff@airport.com
+- Password: staff123
 
-This project is built with:
+### Airline
+- Email: airline@skyair.com
+- Password: airline123
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Passenger
+- Email: john@example.com
+- Password: passenger123
 
-## How can I deploy this project?
+## API Endpoints
 
-Simply open [Lovable](https://lovable.dev/projects/8c652409-7a3e-44d5-a945-b02d99d7ac0f) and click on Share -> Publish.
+The system provides the following API endpoints:
 
-## Can I connect a custom domain to my Lovable project?
+### Authentication
+- `POST /api/auth/login` - User login
 
-Yes it is!
+### Users
+- `GET /api/users` - Get all users
+- `GET /api/users/:id` - Get user by ID
+- `POST /api/users` - Create a new user
+- `PUT /api/users/:id` - Update a user
+- `DELETE /api/users/:id` - Delete a user
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Flights
+- `GET /api/flights` - Get all flights
+- `GET /api/flights/:id` - Get flight by ID
+- `GET /api/flights/airline/:airlineId` - Get flights by airline
+- `POST /api/flights` - Create a new flight
+- `PUT /api/flights/:id` - Update a flight
+- `DELETE /api/flights/:id` - Delete a flight
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Gates
+- `GET /api/gates` - Get all gates
+- `GET /api/gates/available` - Get available gates for a time slot
+- `PUT /api/flights/:id/gate` - Assign a gate to a flight
+
+### Runways
+- `GET /api/runways` - Get all runways
+- `GET /api/runways/available` - Get available runways for a time slot
+- `PUT /api/flights/:id/runway` - Assign a runway to a flight
+
+### Notifications
+- `GET /api/notifications` - Get all notifications
+- `GET /api/notifications/user/:userId` - Get notifications for a user
+- `POST /api/notifications` - Create a new notification
+- `PUT /api/notifications/:id/read` - Mark a notification as read
+
+### Reservations
+- `GET /api/reservations` - Get all reservations
+- `GET /api/reservations/user/:userId` - Get reservations for a user
+- `GET /api/reservations/flight/:flightId` - Get reservations for a flight
+- `POST /api/reservations` - Create a new reservation
+- `PUT /api/reservations/:id/cancel` - Cancel a reservation
+- `PUT /api/reservations/:id/check-in` - Check in for a reservation

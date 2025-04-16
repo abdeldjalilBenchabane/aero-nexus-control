@@ -40,7 +40,8 @@ const apiFetch = async <T>(
 export const flightApi = {
   getAll: () => apiFetch<Flight[]>("/flights"),
   getById: (id: string) => apiFetch<Flight>(`/flights/${id}`),
-  create: (flight: Omit<Flight, "id">) => apiFetch<Flight>("/flights", "POST", flight),
+  create: (flight: Omit<Flight, "id">, user: User) => 
+    apiFetch<Flight>("/flights", "POST", { ...flight, user }),
   update: (id: string, flight: Partial<Flight>) => apiFetch<Flight>(`/flights/${id}`, "PUT", flight),
   delete: (id: string) => apiFetch<void>(`/flights/${id}`, "DELETE"),
   getByAirline: (airlineId: string) => apiFetch<Flight[]>(`/flights/airline/${airlineId}`),
@@ -81,7 +82,8 @@ export const notificationApi = {
   getForUser: (userId: string) => apiFetch<Notification[]>(`/notifications/user/${userId}`),
   create: (notification: Omit<Notification, "id">) => 
     apiFetch<Notification>("/notifications", "POST", notification),
-  markAsRead: (id: string) => apiFetch<Notification>(`/notifications/${id}/read`, "PUT"),
+  markAsRead: (id: string, userId: string) => 
+    apiFetch<Notification>(`/notifications/${id}/read`, "PUT", { userId }),
 };
 
 // Reservation API
@@ -89,8 +91,8 @@ export const reservationApi = {
   getAll: () => apiFetch<Reservation[]>("/reservations"),
   getForUser: (userId: string) => apiFetch<Reservation[]>(`/reservations/user/${userId}`),
   getForFlight: (flightId: string) => apiFetch<Reservation[]>(`/reservations/flight/${flightId}`),
-  create: (reservation: Omit<Reservation, "id" | "timestamp" | "status">) => 
-    apiFetch<Reservation>("/reservations", "POST", reservation),
+  create: (reservation: { flightId: string, passengerId: string, seatId: string }) => 
+    apiFetch<{ success: boolean, reservation: Reservation }>("/reservations", "POST", reservation),
   cancel: (id: string) => apiFetch<Reservation>(`/reservations/${id}/cancel`, "PUT"),
   checkIn: (id: string) => apiFetch<Reservation>(`/reservations/${id}/check-in`, "PUT"),
 };

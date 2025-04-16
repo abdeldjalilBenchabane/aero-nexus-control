@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Logo from "@/components/Logo";
@@ -15,14 +16,18 @@ import {
   CalendarCheck,
   ClipboardList,
   MapPin,
-  Send,
-  GanttChart,
-  Clock,
+  LucideProps,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
   Search,
   Ticket,
-  BookOpen,
-  LogOut
+  Building2,
+  Plane,
+  GanttChartSquare,
+  LandmarkIcon
 } from "lucide-react";
+import { useMobile } from "@/hooks/use-mobile";
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -33,16 +38,37 @@ interface NavItemProps {
 
 const NavItem = ({ icon, label, onClick, isActive }: NavItemProps) => (
   <Button
-    variant={isActive ? "default" : "ghost"}
+    variant="ghost"
     className={cn(
-      "w-full justify-start gap-2 mb-1",
-      isActive ? "bg-sidebar-accent" : "hover:bg-sidebar-accent/50"
+      "w-full justify-start gap-2 mb-1 transition-colors",
+      isActive 
+        ? "bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent/90" 
+        : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
     )}
     onClick={onClick}
   >
     {icon}
-    <span>{label}</span>
+    <span className="truncate">{label}</span>
   </Button>
+);
+
+interface SidebarGroupProps {
+  title: string;
+  children: React.ReactNode;
+  collapsed: boolean;
+}
+
+const SidebarGroup = ({ title, children, collapsed }: SidebarGroupProps) => (
+  <div className="mb-6">
+    {!collapsed && (
+      <p className="text-xs font-semibold uppercase tracking-wider mb-2 text-sidebar-foreground/70 px-3">
+        {title}
+      </p>
+    )}
+    <div className="space-y-1">
+      {children}
+    </div>
+  </div>
 );
 
 interface NavigationSidebarProps {
@@ -52,41 +78,48 @@ interface NavigationSidebarProps {
 const NavigationSidebar = ({ activePath }: NavigationSidebarProps) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [collapsed, setCollapsed] = useState(false);
+  const isMobile = useMobile();
+  
+  const toggleSidebar = () => setCollapsed(!collapsed);
 
+  // Define navigation items by role
   const adminNav = [
     { path: "/admin/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
-    { path: "/admin/manage-users", label: "Manage Users", icon: <Users size={18} /> },
+    { path: "/admin/users", label: "Users", icon: <Users size={18} /> },
+    { path: "/admin/send-notification", label: "Notifications", icon: <Bell size={18} /> },
+    { path: "/admin/gates", label: "Gates", icon: <Building2 size={18} /> },
+    { path: "/admin/runways", label: "Runways", icon: <LandmarkIcon size={18} /> },
     { path: "/admin/reports", label: "Reports", icon: <BarChart size={18} /> },
-    { path: "/admin/system-settings", label: "System Settings", icon: <Settings size={18} /> },
-    { path: "/admin/send-notification", label: "Send Notification", icon: <Bell size={18} /> },
+    { path: "/admin/settings", label: "Settings", icon: <Settings size={18} /> },
   ];
 
   const staffNav = [
     { path: "/staff/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
-    { path: "/staff/manage-flights", label: "Manage Flights", icon: <PlaneTakeoff size={18} /> },
-    { path: "/staff/assign-gate-runway", label: "Assign Gate/Runway", icon: <MapPin size={18} /> },
-    { path: "/staff/real-time-flights", label: "Real-Time Flights", icon: <Compass size={18} /> },
-    { path: "/staff/send-notification", label: "Send Notification", icon: <Bell size={18} /> },
+    { path: "/staff/flights", label: "Manage Flights", icon: <PlaneTakeoff size={18} /> },
+    { path: "/staff/assign-gate-runway", label: "Gates & Runways", icon: <MapPin size={18} /> },
+    { path: "/staff/notifications", label: "Send Notification", icon: <Bell size={18} /> },
+    { path: "/staff/real-time-flights", label: "Live Flights", icon: <Compass size={18} /> },
   ];
 
   const airlineNav = [
     { path: "/airline/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
-    { path: "/airline/my-flights", label: "My Flights", icon: <PlaneTakeoff size={18} /> },
-    { path: "/airline/delay-manager", label: "Delay Manager", icon: <Clock size={18} /> },
-    { path: "/airline/passenger-notify", label: "Passenger Notify", icon: <Bell size={18} /> },
+    { path: "/airline/flights", label: "My Flights", icon: <PlaneTakeoff size={18} /> },
+    { path: "/airline/airplanes", label: "My Airplanes", icon: <Plane size={18} /> },
+    { path: "/airline/notifications", label: "Notifications", icon: <Bell size={18} /> },
   ];
 
   const passengerNav = [
     { path: "/passenger/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
     { path: "/passenger/search-flights", label: "Search Flights", icon: <Search size={18} /> },
-    { path: "/passenger/reserve-seat", label: "Reserve Seat", icon: <CalendarCheck size={18} /> },
-    { path: "/passenger/my-reservations", label: "My Reservations", icon: <Ticket size={18} /> },
-    { path: "/passenger/my-notifications", label: "My Notifications", icon: <Bell size={18} /> },
+    { path: "/passenger/reservations", label: "My Reservations", icon: <Ticket size={18} /> },
+    { path: "/passenger/notifications", label: "Notifications", icon: <Bell size={18} /> },
+    { path: "/passenger/flight-status", label: "Flight Status", icon: <GanttChartSquare size={18} /> },
   ];
 
+  // Select the appropriate navigation items based on user role
   let navItems: { path: string; label: string; icon: React.ReactNode }[] = [];
-
-  // Select the appropriate navigation items based on the user's role
+  
   switch (user?.role) {
     case "admin":
       navItems = adminNav;
@@ -109,39 +142,116 @@ const NavigationSidebar = ({ activePath }: NavigationSidebarProps) => {
     navigate("/login");
   };
 
+  // If mobile and sidebar is not collapsed, use a full-width sidebar with overlay
+  if (isMobile && !collapsed) {
+    return (
+      <>
+        {/* Overlay for mobile sidebar */}
+        <div 
+          className="fixed inset-0 bg-black/50 z-40"
+          onClick={toggleSidebar}
+        />
+        
+        {/* Mobile sidebar */}
+        <div className="fixed h-screen w-64 bg-sidebar z-50 flex flex-col shadow-xl animate-in slide-in-from-left">
+          <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
+            <Logo />
+            <Button variant="ghost" size="icon" onClick={toggleSidebar} className="text-sidebar-foreground">
+              <ChevronLeft size={18} />
+            </Button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-3">
+            <SidebarGroup title="Main Menu" collapsed={collapsed}>
+              {navItems.map((item) => (
+                <NavItem
+                  key={item.path}
+                  icon={item.icon}
+                  label={item.label}
+                  onClick={() => {
+                    navigate(item.path);
+                    if (isMobile) setCollapsed(true);
+                  }}
+                  isActive={activePath === item.path}
+                />
+              ))}
+            </SidebarGroup>
+          </div>
+          
+          <div className="p-3 border-t border-sidebar-border">
+            {user && (
+              <div className="mb-3 px-3 py-2">
+                <p className="text-sm font-medium text-sidebar-foreground">{user.firstName} {user.lastName}</p>
+                <p className="text-xs text-sidebar-foreground/70 capitalize">{user.role}</p>
+              </div>
+            )}
+            <Button 
+              variant="outline" 
+              className="w-full flex items-center gap-2 text-sidebar-foreground border-sidebar-border hover:bg-sidebar-accent/50" 
+              onClick={handleLogout}
+            >
+              <LogOut size={18} />
+              <span>Logout</span>
+            </Button>
+          </div>
+        </div>
+        
+        {/* Toggle button for collapsed mobile sidebar */}
+        <Button 
+          variant="outline" 
+          size="icon"
+          className="fixed bottom-4 left-4 z-30 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 border-none"
+          onClick={toggleSidebar}
+        >
+          <ChevronRight size={18} />
+        </Button>
+      </>
+    );
+  }
+
   return (
-    <div className="h-screen w-64 bg-sidebar flex flex-col border-r">
-      <div className="p-4 border-b">
-        <Logo />
+    <div className={cn(
+      "h-screen bg-sidebar flex flex-col border-r border-sidebar-border transition-all duration-300",
+      collapsed ? "w-16" : "w-64"
+    )}>
+      <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
+        {!collapsed && <Logo />}
+        <Button variant="ghost" size="icon" onClick={toggleSidebar} className="text-sidebar-foreground">
+          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+        </Button>
       </div>
       
-      <div className="flex-1 overflow-auto p-4">
-        <div className="mb-6">
-          <p className="text-xs font-semibold uppercase tracking-wider mb-2 text-sidebar-foreground/70">
-            Main Menu
-          </p>
+      <div className="flex-1 overflow-y-auto p-3">
+        <SidebarGroup title="Main Menu" collapsed={collapsed}>
           {navItems.map((item) => (
             <NavItem
               key={item.path}
               icon={item.icon}
-              label={item.label}
+              label={collapsed ? "" : item.label}
               onClick={() => navigate(item.path)}
               isActive={activePath === item.path}
             />
           ))}
-        </div>
+        </SidebarGroup>
       </div>
       
-      <div className="p-4 border-t">
-        {user && (
-          <div className="mb-4">
-            <p className="text-sm font-medium">{user.firstName} {user.lastName}</p>
+      <div className={cn("p-3 border-t border-sidebar-border", collapsed ? "items-center justify-center" : "")}>
+        {user && !collapsed && (
+          <div className="mb-3 px-3 py-2">
+            <p className="text-sm font-medium text-sidebar-foreground">{user.firstName} {user.lastName}</p>
             <p className="text-xs text-sidebar-foreground/70 capitalize">{user.role}</p>
           </div>
         )}
-        <Button variant="outline" className="w-full flex items-center gap-2" onClick={handleLogout}>
+        <Button 
+          variant="outline" 
+          className={cn(
+            "flex items-center gap-2 text-sidebar-foreground border-sidebar-border hover:bg-sidebar-accent/50",
+            collapsed ? "w-10 h-10 p-0 justify-center" : "w-full"
+          )}
+          onClick={handleLogout}
+        >
           <LogOut size={18} />
-          <span>Logout</span>
+          {!collapsed && <span>Logout</span>}
         </Button>
       </div>
     </div>
