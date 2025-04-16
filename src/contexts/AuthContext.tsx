@@ -5,8 +5,18 @@ import { User, getUser } from "@/lib/db";
 interface AuthContextType {
   user: User | null;
   login: (username: string, password: string) => Promise<boolean>;
+  register: (userData: RegisterUserData) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
+}
+
+export interface RegisterUserData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  username: string;
+  password: string;
+  role: "passenger" | "airline";
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -47,6 +57,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
+  const register = async (userData: RegisterUserData): Promise<boolean> => {
+    try {
+      // In a real app, this would be an API call
+      const response = await fetch("http://localhost:3001/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(userData)
+      });
+      
+      if (!response.ok) {
+        throw new Error("Registration failed");
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Registration error:", error);
+      return false;
+    }
+  };
+
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
@@ -54,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated }}>
+    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );

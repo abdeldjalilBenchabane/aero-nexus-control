@@ -1,21 +1,38 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlaneTakeoff } from "lucide-react";
+import { PlaneTakeoff, CheckCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Check if user was redirected from registration
+    const params = new URLSearchParams(location.search);
+    if (params.get('registered') === 'true') {
+      setRegistrationSuccess(true);
+      toast({
+        title: "Account created successfully",
+        description: "You can now log in with your credentials",
+        variant: "success"
+      });
+    }
+  }, [location, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +80,22 @@ const Login = () => {
           <Logo size="lg" className="justify-center mb-2" />
           <p className="text-aviation-navy-dark/70">Airport Flight Management System</p>
         </div>
+
+        {registrationSuccess && (
+          <div className="mb-6 rounded-md bg-green-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <CheckCircle className="h-5 w-5 text-green-400" aria-hidden="true" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-green-800">Registration successful</h3>
+                <div className="mt-2 text-sm text-green-700">
+                  <p>Your account has been created. You can now log in.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <Card>
           <CardHeader>
@@ -125,10 +158,16 @@ const Login = () => {
               </div>
             </CardContent>
             
-            <CardFooter>
+            <CardFooter className="flex-col gap-4">
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "Logging in..." : "Login"}
               </Button>
+              <p className="text-sm text-center text-gray-600">
+                Don't have an account?{" "}
+                <Link to="/signup" className="text-blue-600 hover:underline">
+                  Sign up
+                </Link>
+              </p>
             </CardFooter>
           </form>
         </Card>
