@@ -56,7 +56,7 @@ const DatabaseConnectionTest = () => {
           <CheckCircle className="h-4 w-4 text-green-600" />
           <AlertTitle className="text-green-800">Connected</AlertTitle>
           <AlertDescription className="text-green-700">
-            Successfully connected to the database.
+            Successfully connected to the airport_management database.
           </AlertDescription>
         </Alert>
       )}

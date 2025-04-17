@@ -7,7 +7,7 @@ const pool = mysql.createPool({
   port: 3306,
   user: 'root',
   password: '',
-  database: 'airport_management', // Updated to match your database name
+  database: 'airport_management',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -25,10 +25,10 @@ async function testConnection() {
     console.log('Database query test result:', rows);
     
     connection.release();
-    return true;
+    return { success: true, message: "Connected to airport_management database" };
   } catch (error) {
     console.error('Error connecting to MySQL database:', error);
-    return false;
+    return { success: false, message: error.message || "Unknown database error" };
   }
 }
 

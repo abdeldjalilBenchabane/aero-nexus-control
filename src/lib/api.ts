@@ -1,6 +1,6 @@
 
 // API utilities for AJAX requests
-import { Flight, User, Notification, Gate, Runway, Reservation } from "./db";
+import { Flight, User, Notification, Gate, Runway, Reservation } from "./types";
 
 const API_BASE_URL = "http://localhost:3001/api";
 
@@ -40,8 +40,8 @@ const apiFetch = async <T>(
 export const flightApi = {
   getAll: () => apiFetch<Flight[]>("/flights"),
   getById: (id: string) => apiFetch<Flight>(`/flights/${id}`),
-  create: (flight: Omit<Flight, "id">, user: User) => 
-    apiFetch<Flight>("/flights", "POST", { ...flight, user }),
+  create: (flight: Omit<Flight, "id">) => 
+    apiFetch<Flight>("/flights", "POST", flight),
   update: (id: string, flight: Partial<Flight>) => apiFetch<Flight>(`/flights/${id}`, "PUT", flight),
   delete: (id: string) => apiFetch<void>(`/flights/${id}`, "DELETE"),
   getByAirline: (airlineId: string) => apiFetch<Flight[]>(`/flights/airline/${airlineId}`),
@@ -54,15 +54,16 @@ export const userApi = {
   create: (user: Omit<User, "id">) => apiFetch<User>("/users", "POST", user),
   update: (id: string, user: Partial<User>) => apiFetch<User>(`/users/${id}`, "PUT", user),
   delete: (id: string) => apiFetch<void>(`/users/${id}`, "DELETE"),
-  login: (username: string, password: string) => 
-    apiFetch<{ user: User, token: string }>("/auth/login", "POST", { username, password }),
+  login: (email: string, password: string) => 
+    apiFetch<{ user: User, token: string }>("/auth/login", "POST", { email, password }),
+  register: (userData: { name: string, email: string, password: string, role: string }) =>
+    apiFetch<{ user: User, token: string }>("/auth/register", "POST", userData),
 };
 
 // Gate API
 export const gateApi = {
   getAll: () => apiFetch<Gate[]>("/gates"),
-  getAvailable: (startTime: string, endTime: string) => 
-    apiFetch<Gate[]>(`/gates/available?startTime=${startTime}&endTime=${endTime}`),
+  getAvailable: () => apiFetch<Gate[]>("/gates/available"),
   assign: (flightId: string, gateId: string) => 
     apiFetch<Flight>(`/flights/${flightId}/gate`, "PUT", { gateId }),
 };
@@ -70,8 +71,7 @@ export const gateApi = {
 // Runway API
 export const runwayApi = {
   getAll: () => apiFetch<Runway[]>("/runways"),
-  getAvailable: (startTime: string, endTime: string) => 
-    apiFetch<Runway[]>(`/runways/available?startTime=${startTime}&endTime=${endTime}`),
+  getAvailable: () => apiFetch<Runway[]>("/runways/available"),
   assign: (flightId: string, runwayId: string) => 
     apiFetch<Flight>(`/flights/${flightId}/runway`, "PUT", { runwayId }),
 };
@@ -80,10 +80,8 @@ export const runwayApi = {
 export const notificationApi = {
   getAll: () => apiFetch<Notification[]>("/notifications"),
   getForUser: (userId: string) => apiFetch<Notification[]>(`/notifications/user/${userId}`),
-  create: (notification: Omit<Notification, "id">) => 
+  create: (notification: { title: string, message: string, target_role: string, flight_id?: string }) => 
     apiFetch<Notification>("/notifications", "POST", notification),
-  markAsRead: (id: string, userId: string) => 
-    apiFetch<Notification>(`/notifications/${id}/read`, "PUT", { userId }),
 };
 
 // Reservation API
@@ -91,8 +89,6 @@ export const reservationApi = {
   getAll: () => apiFetch<Reservation[]>("/reservations"),
   getForUser: (userId: string) => apiFetch<Reservation[]>(`/reservations/user/${userId}`),
   getForFlight: (flightId: string) => apiFetch<Reservation[]>(`/reservations/flight/${flightId}`),
-  create: (reservation: { flightId: string, passengerId: string, seatId: string }) => 
+  create: (reservation: { flight_id: string, user_id: string, seat_id: string }) => 
     apiFetch<{ success: boolean, reservation: Reservation }>("/reservations", "POST", reservation),
-  cancel: (id: string) => apiFetch<Reservation>(`/reservations/${id}/cancel`, "PUT"),
-  checkIn: (id: string) => apiFetch<Reservation>(`/reservations/${id}/check-in`, "PUT"),
 };

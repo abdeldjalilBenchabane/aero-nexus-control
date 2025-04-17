@@ -195,6 +195,24 @@ const Test = () => {
                   <li>Verify the database "airport_management" exists</li>
                   <li>Confirm the username and password are correct</li>
                   <li>Ensure the server is running on port 3001</li>
+                  <li>Check if your tables match the required schema</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="font-medium">Database Schema</h3>
+                <p className="text-gray-600 mt-1">
+                  The application requires the following tables:
+                </p>
+                <ul className="list-disc pl-5 mt-1 text-gray-600">
+                  <li>users</li>
+                  <li>airline_profiles</li>
+                  <li>gates</li>
+                  <li>runways</li>
+                  <li>flights</li>
+                  <li>seats</li>
+                  <li>reservations</li>
+                  <li>notifications</li>
                 </ul>
               </div>
             </CardContent>

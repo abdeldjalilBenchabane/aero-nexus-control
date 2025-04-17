@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import DatabaseConnectionTest from "@/components/DatabaseConnectionTest";
 
 const Login = () => {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,7 +40,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const success = await login(username, password);
+      const success = await login(email, password);
       
       if (success) {
         const userObj = JSON.parse(localStorage.getItem("user") || "{}");
@@ -61,7 +62,7 @@ const Login = () => {
             navigate("/");
         }
       } else {
-        setError("Invalid username or password");
+        setError("Invalid email or password");
       }
     } catch (err) {
       setError("An error occurred. Please try again.");
@@ -106,13 +107,13 @@ const Login = () => {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="username"
-                  type="text"
-                  placeholder="Enter your username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
@@ -158,10 +159,10 @@ const Login = () => {
                     <h3 className="text-sm font-medium text-blue-800">Demo Accounts</h3>
                     <div className="mt-2 text-sm text-blue-700">
                       <ul className="list-disc pl-5 space-y-1">
-                        <li>Admin: username <strong>admin</strong>, password <strong>admin123</strong></li>
-                        <li>Staff: username <strong>staff1</strong>, password <strong>staff123</strong></li>
-                        <li>Airline: username <strong>airline1</strong>, password <strong>airline123</strong></li>
-                        <li>Passenger: username <strong>passenger1</strong>, password <strong>passenger123</strong></li>
+                        <li>Admin: email <strong>admin@airport.com</strong>, password <strong>admin123</strong></li>
+                        <li>Staff: email <strong>staff@airport.com</strong>, password <strong>staff123</strong></li>
+                        <li>Airline: email <strong>airline@skyair.com</strong>, password <strong>airline123</strong></li>
+                        <li>Passenger: email <strong>john@example.com</strong>, password <strong>passenger123</strong></li>
                       </ul>
                     </div>
                   </div>
