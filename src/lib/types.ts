@@ -30,7 +30,7 @@ export interface Runway {
 export interface Flight {
   id: string;
   flight_number: string;
-  airline_id?: string;  // Make this optional to maintain backward compatibility
+  airline_id?: string;  // Add airline_id as an optional property
   airline?: string; // For backward compatibility
   airline_name?: string; // Joined field
   gate_id?: string;
@@ -44,6 +44,8 @@ export interface Flight {
   status: "scheduled" | "delayed" | "cancelled" | "landed" | "in_air";
   price: number;
   flightNumber?: string; // For backward compatibility
+  departureTime?: string; // For backward compatibility
+  arrivalTime?: string; // For backward compatibility
 }
 
 export interface Seat {
