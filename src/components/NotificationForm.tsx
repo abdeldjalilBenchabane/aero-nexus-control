@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { User, Flight, Notification } from "@/lib/types";
+import { Flight, Notification } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,17 +49,73 @@ const NotificationForm = ({
         (f.airline_id && f.airline_id === user.airlineId) || 
         (f.airline && f.airline === user.airlineId)
       );
-      // Convert to Flight type from types.ts
-      setAvailableFlights(airlineFlights as Flight[]);
+      
+      // Map to the Flight type from types.ts with required properties
+      const mappedFlights = airlineFlights.map(f => ({
+        id: f.id,
+        flight_number: f.flightNumber || "",
+        airline_id: f.airline_id || f.airline,
+        airline: f.airline,
+        destination: f.destination,
+        departure_time: f.departureTime || "",
+        arrival_time: f.arrivalTime || "",
+        status: f.status as any,
+        price: 0, // Default value since it's required
+        origin: f.origin
+      }));
+      
+      setAvailableFlights(mappedFlights as Flight[]);
     } else {
       // Admin and staff can see all flights
       if (flightFilter) {
-        const filteredFlights = flights.filter(flight => 
-          flightFilter(flight as Flight)
-        );
-        setAvailableFlights(filteredFlights as Flight[]);
+        const filteredFlights = flights.filter(f => {
+          // Map to Flight type for the filter function
+          const mappedFlight = {
+            id: f.id,
+            flight_number: f.flightNumber || "",
+            airline_id: f.airline_id || f.airline,
+            airline: f.airline,
+            destination: f.destination,
+            departure_time: f.departureTime || "",
+            arrival_time: f.arrivalTime || "",
+            status: f.status as any,
+            price: 0,
+            origin: f.origin
+          };
+          return flightFilter(mappedFlight as Flight);
+        });
+        
+        // Map filtered flights to Flight type
+        const mappedFlights = filteredFlights.map(f => ({
+          id: f.id,
+          flight_number: f.flightNumber || "",
+          airline_id: f.airline_id || f.airline,
+          airline: f.airline,
+          destination: f.destination,
+          departure_time: f.departureTime || "",
+          arrival_time: f.arrivalTime || "",
+          status: f.status as any,
+          price: 0,
+          origin: f.origin
+        }));
+        
+        setAvailableFlights(mappedFlights as Flight[]);
       } else {
-        setAvailableFlights(flights as Flight[]);
+        // Map all flights to Flight type
+        const mappedFlights = flights.map(f => ({
+          id: f.id,
+          flight_number: f.flightNumber || "",
+          airline_id: f.airline_id || f.airline,
+          airline: f.airline,
+          destination: f.destination,
+          departure_time: f.departureTime || "",
+          arrival_time: f.arrivalTime || "",
+          status: f.status as any,
+          price: 0,
+          origin: f.origin
+        }));
+        
+        setAvailableFlights(mappedFlights as Flight[]);
       }
     }
   }, [user, flightFilter]);
