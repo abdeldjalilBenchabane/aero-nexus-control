@@ -7,7 +7,7 @@ const pool = mysql.createPool({
   port: 3306,
   user: 'root',
   password: '',
-  database: 'airport_management',
+  database: 'airport_db',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -18,14 +18,14 @@ async function testConnection() {
   try {
     const connection = await pool.getConnection();
     console.log('MySQL connection established successfully');
-    console.log('Connected to database:', 'airport_management');
+    console.log('Connected to database:', 'airport_db');
     
     // Test a simple query to verify database is working
     const [rows] = await connection.execute('SELECT 1 as test');
     console.log('Database query test result:', rows);
     
     connection.release();
-    return { success: true, message: "Connected to airport_management database" };
+    return { success: true, message: "Connected to airport_db database" };
   } catch (error) {
     console.error('Error connecting to MySQL database:', error);
     return { success: false, message: error.message || "Unknown database error" };

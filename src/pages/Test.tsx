@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -125,11 +124,9 @@ const Test = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {/* Database connection test using component */}
               <h3 className="text-sm font-medium mb-4">Component Test:</h3>
               <DatabaseConnectionTest />
               
-              {/* Direct connection test */}
               <div className="mt-8">
                 <h3 className="text-sm font-medium mb-4">Manual Database Test:</h3>
                 <Button 
@@ -152,7 +149,7 @@ const Test = () => {
                     <CheckCircle className="h-4 w-4 text-green-600" />
                     <AlertTitle className="text-green-800">Database Connected</AlertTitle>
                     <AlertDescription className="text-green-700">
-                      Successfully connected to the airport_management database.
+                      Successfully connected to the airport_db database.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -170,7 +167,6 @@ const Test = () => {
             </CardContent>
           </Card>
           
-          {/* Connection troubleshooting information */}
           <Card>
             <CardHeader>
               <CardTitle>Troubleshooting</CardTitle>
@@ -180,7 +176,7 @@ const Test = () => {
                 <h3 className="font-medium">Database Settings</h3>
                 <p className="text-gray-600 mt-1">
                   The application is configured to connect to:<br />
-                  - Database Name: <code className="bg-gray-100 px-1 rounded">airport_management</code><br />
+                  - Database Name: <code className="bg-gray-100 px-1 rounded">airport_db</code><br />
                   - MySQL Host: <code className="bg-gray-100 px-1 rounded">localhost</code><br />
                   - MySQL Port: <code className="bg-gray-100 px-1 rounded">3306</code><br />
                   - MySQL User: <code className="bg-gray-100 px-1 rounded">root</code><br />
@@ -192,7 +188,7 @@ const Test = () => {
                 <h3 className="font-medium">Common Issues</h3>
                 <ul className="list-disc pl-5 mt-1 text-gray-600">
                   <li>Make sure your MySQL server is running</li>
-                  <li>Verify the database "airport_management" exists</li>
+                  <li>Verify the database "airport_db" exists</li>
                   <li>Confirm the username and password are correct</li>
                   <li>Ensure the server is running on port 3001</li>
                   <li>Check if your tables match the required schema</li>
@@ -206,19 +202,20 @@ const Test = () => {
                 </p>
                 <ul className="list-disc pl-5 mt-1 text-gray-600">
                   <li>users</li>
-                  <li>airline_profiles</li>
+                  <li>airlines</li>
+                  <li>airplanes</li>
                   <li>gates</li>
                   <li>runways</li>
                   <li>flights</li>
                   <li>seats</li>
                   <li>reservations</li>
                   <li>notifications</li>
+                  <li>user_notifications</li>
                 </ul>
               </div>
             </CardContent>
           </Card>
           
-          {/* Logout button */}
           <div className="mt-8">
             <Button 
               onClick={handleLogout}
