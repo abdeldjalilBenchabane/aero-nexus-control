@@ -49,17 +49,17 @@ const NotificationForm = ({
         (f.airline_id && f.airline_id === user.airlineId) || 
         (f.airline && f.airline === user.airlineId)
       );
-      // Type conversion to match the Flight interface from types.ts
-      setAvailableFlights(airlineFlights);
+      // Convert to Flight type from types.ts
+      setAvailableFlights(airlineFlights as Flight[]);
     } else {
       // Admin and staff can see all flights
       if (flightFilter) {
         const filteredFlights = flights.filter(flight => 
-          flightFilter(flight)
+          flightFilter(flight as Flight)
         );
-        setAvailableFlights(filteredFlights);
+        setAvailableFlights(filteredFlights as Flight[]);
       } else {
-        setAvailableFlights(flights);
+        setAvailableFlights(flights as Flight[]);
       }
     }
   }, [user, flightFilter]);

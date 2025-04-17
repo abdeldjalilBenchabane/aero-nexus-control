@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import NotificationForm from "@/components/NotificationForm";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
+import { Flight } from "@/lib/types";
 
 const PassengerNotify = () => {
   const { user } = useAuth();
@@ -41,7 +42,7 @@ const PassengerNotify = () => {
             
             <NotificationForm 
               allowedTargets={["flight"]}
-              flightFilter={(flight) => 
+              flightFilter={(flight: Flight) => 
                 (flight.airline_id && flight.airline_id === airlineCompany) || 
                 (flight.airline && flight.airline === airlineCompany)
               }
