@@ -1,9 +1,8 @@
-
 // Mock database for the airport flight management system
-import { User, Flight, Gate, Runway, Notification, Reservation, AirlineProfile } from './types';
+import type { User, Flight, Gate, Runway, Notification, Reservation, AirlineProfile } from './types';
 
 // Re-export the types to maintain compatibility with existing imports
-export { User, Flight, Gate, Runway, Notification, Reservation, AirlineProfile };
+export type { User, Flight, Gate, Runway, Notification, Reservation, AirlineProfile };
 
 // Mock data
 export const users: User[] = [
@@ -116,30 +115,39 @@ export const flights: Flight[] = [
 export const gates: Gate[] = [
   {
     id: "gate1",
-    gate_number: "A1"
+    gate_number: "A1",
+    name: "A1",
+    scheduledFlights: 1
   },
   {
     id: "gate2",
-    gate_number: "B3"
+    gate_number: "B3",
+    name: "B3", 
+    scheduledFlights: 1
   },
   {
     id: "gate3",
-    gate_number: "C2"
+    gate_number: "C2",
+    name: "C2",
+    scheduledFlights: 1
   }
 ];
 
 export const runways: Runway[] = [
   {
     id: "runway1",
-    runway_number: "R1"
+    runway_number: "R1",
+    isAvailable: true
   },
   {
     id: "runway2",
-    runway_number: "R2"
+    runway_number: "R2",
+    isAvailable: true
   },
   {
     id: "runway3",
-    runway_number: "R3"
+    runway_number: "R3",
+    isAvailable: true
   }
 ];
 

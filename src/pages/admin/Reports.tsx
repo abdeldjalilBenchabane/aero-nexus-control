@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import PageLayout from "@/components/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,7 +37,6 @@ const Reports = () => {
     setFlightData(flightData);
 
     // Prepare gates data for the pie chart
-    // Update the gates data to ensure scheduledFlights is handled correctly
     const gatesData = gates.map(gate => ({
       name: gate.name || gate.gate_number,
       scheduledFlights: typeof gate.scheduledFlights === 'number' ? gate.scheduledFlights : 0,

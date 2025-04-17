@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import PageLayout from "@/components/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import FlightTable from "@/components/FlightTable";
 import { flights } from "@/lib/db";
-import { Flight } from "@/lib/types";
+import type { Flight } from "@/lib/types";
 import { Search, ArrowUpDown, RefreshCw } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,9 +31,9 @@ const RealTimeFlights = () => {
       const term = searchTerm.toLowerCase();
       result = result.filter(
         flight =>
-          flight.flightNumber.toLowerCase().includes(term) ||
-          flight.airline.toLowerCase().includes(term) ||
-          flight.origin.toLowerCase().includes(term) ||
+          flight.flightNumber?.toLowerCase().includes(term) ||
+          flight.airline?.toLowerCase().includes(term) ||
+          flight.origin?.toLowerCase().includes(term) ||
           flight.destination.toLowerCase().includes(term)
       );
     }
@@ -77,17 +78,17 @@ const RealTimeFlights = () => {
   };
 
   const handleUpdateUser = () => {
-  const nextStatus: Record<Flight["status"], Flight["status"]> = {
-    scheduled: "boarding",
-    boarding: "departed",
-    departed: "arrived",
-    arrived: "arrived",
-    delayed: "scheduled",
-    cancelled: "scheduled",
-    landed: "arrived",    // Add the missing statuses
-    in_air: "landed"      // Add the missing statuses
-  };
-}
+    const nextStatus: Record<Flight["status"], Flight["status"]> = {
+      scheduled: "boarding",
+      boarding: "departed",
+      departed: "arrived",
+      arrived: "arrived",
+      delayed: "scheduled",
+      cancelled: "scheduled",
+      landed: "arrived",
+      in_air: "landed"
+    };
+  }
 
   return (
     <PageLayout title="Real-Time Flight Tracking">
@@ -151,6 +152,8 @@ const RealTimeFlights = () => {
                     <SelectItem value="arrived">Arrived</SelectItem>
                     <SelectItem value="delayed">Delayed</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="landed">Landed</SelectItem>
+                    <SelectItem value="in_air">In Air</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -158,7 +161,7 @@ const RealTimeFlights = () => {
               <div className="space-y-2">
                 <Label htmlFor="sort">Sort By</Label>
                 <Select 
-                  value={`${sortField}-${sortDirection}`} 
+                  value={`${String(sortField)}-${sortDirection}`} 
                   onValueChange={(val) => {
                     const [field, direction] = val.split('-');
                     setSortField(field as keyof Flight);
