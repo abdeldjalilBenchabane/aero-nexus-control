@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import PageLayout from "@/components/PageLayout";
 import { Button } from "@/components/ui/button";
@@ -15,12 +14,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const MyFlights = () => {
   const { user } = useAuth();
-  const airlineCompany = user?.airlineId || "Unknown Airline"; // In a real app, this would come from the user's profile
+  const airlineCompany = user?.airlineId || user?.id || "Unknown Airline";
   
-  // Filter flights that belong to this airline
-  const airlineFlights = flights.filter(flight => flight.airline === airlineCompany);
-  
-  // States
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isAddFlightOpen, setIsAddFlightOpen] = useState(false);
@@ -33,7 +28,8 @@ const MyFlights = () => {
     status: "scheduled",
   });
   
-  // Filter flights based on search and status
+  const airlineFlights = flights.filter(flight => flight.airline === airlineCompany);
+  
   const filteredFlights = airlineFlights.filter(flight => {
     const matchesSearch = searchTerm
       ? flight.flightNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -46,7 +42,6 @@ const MyFlights = () => {
     return matchesSearch && matchesStatus;
   });
   
-  // Group flights by status
   const activeFlights = filteredFlights.filter(flight => 
     ["scheduled", "boarding", "departed"].includes(flight.status)
   );
@@ -57,26 +52,21 @@ const MyFlights = () => {
     ["delayed", "cancelled"].includes(flight.status)
   );
   
-  // Handle input changes for new flight
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setNewFlight(prev => ({ ...prev, [name]: value }));
   };
   
-  // Handle status selection
   const handleStatusChange = (value: string) => {
     setNewFlight(prev => ({ ...prev, status: value }));
   };
   
-  // Add new flight
   const handleAddFlight = () => {
-    // In a real app, this would make an API call
     console.log('New flight to be added by airline:', {
       ...newFlight,
       airline: airlineCompany
     });
     setIsAddFlightOpen(false);
-    // Reset form
     setNewFlight({
       flightNumber: "",
       origin: "",
@@ -90,7 +80,6 @@ const MyFlights = () => {
   return (
     <PageLayout title="My Flights">
       <div className="space-y-6">
-        {/* Search and Add Flight */}
         <div className="flex flex-col sm:flex-row justify-between gap-4">
           <div className="relative max-w-md">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -217,7 +206,6 @@ const MyFlights = () => {
           </div>
         </div>
         
-        {/* Flights Tabs */}
         <Tabs defaultValue="active">
           <TabsList className="mb-4">
             <TabsTrigger value="active">Active Flights</TabsTrigger>

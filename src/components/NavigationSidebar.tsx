@@ -139,6 +139,14 @@ const NavigationSidebar = ({ activePath }: NavigationSidebarProps) => {
     navigate("/login");
   };
 
+  const getUserDisplayName = () => {
+    if (!user) return "";
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    return user.name || "User";
+  };
+
   if (isMobile && !collapsed) {
     return (
       <>
@@ -175,7 +183,7 @@ const NavigationSidebar = ({ activePath }: NavigationSidebarProps) => {
           <div className="p-3 border-t border-sidebar-border">
             {user && (
               <div className="mb-3 px-3 py-2">
-                <p className="text-sm font-medium text-sidebar-foreground">{user.firstName} {user.lastName}</p>
+                <p className="text-sm font-medium text-sidebar-foreground">{getUserDisplayName()}</p>
                 <p className="text-xs text-sidebar-foreground/70 capitalize">{user.role}</p>
               </div>
             )}
@@ -231,7 +239,7 @@ const NavigationSidebar = ({ activePath }: NavigationSidebarProps) => {
       <div className={cn("p-3 border-t border-sidebar-border", collapsed ? "items-center justify-center" : "")}>
         {user && !collapsed && (
           <div className="mb-3 px-3 py-2">
-            <p className="text-sm font-medium text-sidebar-foreground">{user.firstName} {user.lastName}</p>
+            <p className="text-sm font-medium text-sidebar-foreground">{getUserDisplayName()}</p>
             <p className="text-xs text-sidebar-foreground/70 capitalize">{user.role}</p>
           </div>
         )}

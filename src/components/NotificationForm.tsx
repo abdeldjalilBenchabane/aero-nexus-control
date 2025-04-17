@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { User, Flight, addNotification, flights } from "@/lib/db";
+import { User, Flight } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { users } from "@/lib/db";
+import { flights } from "@/lib/db";
 
 interface NotificationFormProps {
   allowTargetRole?: boolean;
@@ -26,7 +25,9 @@ interface NotificationFormProps {
 
 const NotificationForm = ({ 
   allowTargetRole = false, 
-  onSuccess 
+  onSuccess,
+  allowedTargets,
+  flightFilter
 }: NotificationFormProps) => {
   const { user } = useAuth();
   const [targetType, setTargetType] = useState<"all" | "role" | "flight">("all");
@@ -44,9 +45,10 @@ const NotificationForm = ({
       setAvailableFlights(flights.filter(f => f.airline === user.airlineId));
     } else {
       // Admin and staff can see all flights
-      setAvailableFlights(flights);
+      const filteredFlights = flightFilter ? flights.filter(flightFilter) : flights;
+      setAvailableFlights(filteredFlights);
     }
-  }, [user]);
+  }, [user, flightFilter]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

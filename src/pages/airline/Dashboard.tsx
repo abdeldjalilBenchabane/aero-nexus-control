@@ -1,4 +1,3 @@
-
 import PageLayout from "@/components/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { flights, notifications, Flight } from "@/lib/db";
@@ -11,12 +10,10 @@ import { Plane, Users, Clock, AlertTriangle, CheckCircle, Bell } from "lucide-re
 
 const AirlineDashboard = () => {
   const { user } = useAuth();
-  const airlineCompany = user?.airlineId || "Unknown Airline"; // In a real app, this would come from the user's profile
+  const airlineCompany = user?.airlineId || user?.id || "Unknown Airline";
   
-  // Filter flights that belong to this airline
   const airlineFlights = flights.filter(flight => flight.airline === airlineCompany);
   
-  // Calculate statistics
   const totalFlights = airlineFlights.length;
   const activeFlights = airlineFlights.filter(flight => 
     ["scheduled", "boarding", "departed"].includes(flight.status)
@@ -24,13 +21,11 @@ const AirlineDashboard = () => {
   const delayedFlights = airlineFlights.filter(flight => flight.status === "delayed").length;
   const completedFlights = airlineFlights.filter(flight => flight.status === "arrived").length;
   
-  // Get notifications for this airline's flights
   const flightIds = airlineFlights.map(flight => flight.id);
   const relevantNotifications = notifications.filter(
     notification => notification.flightId && flightIds.includes(notification.flightId)
-  ).slice(0, 5); // Show only 5 most recent
-
-  // Get flights for today
+  ).slice(0, 5);
+  
   const today = new Date();
   const todayFlights = airlineFlights.filter(flight => {
     const flightDate = new Date(flight.departureTime);
@@ -44,7 +39,6 @@ const AirlineDashboard = () => {
   return (
     <PageLayout title={`${airlineCompany} Dashboard`}>
       <div className="space-y-6">
-        {/* Statistics Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatisticsCard 
             title="Total Flights"
@@ -74,7 +68,6 @@ const AirlineDashboard = () => {
           />
         </div>
         
-        {/* Main Content */}
         <Tabs defaultValue="today">
           <TabsList className="mb-4">
             <TabsTrigger value="today">Today's Flights</TabsTrigger>

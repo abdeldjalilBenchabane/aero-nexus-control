@@ -10,7 +10,8 @@ import { InfoIcon } from "lucide-react";
 
 const PassengerNotify = () => {
   const { user } = useAuth();
-  const airlineCompany = user?.airlineId || "Unknown Airline"; // In a real app, this would come from the user's profile
+  // Use fallback for airlineId
+  const airlineCompany = user?.airlineId || user?.id || "Unknown Airline";
   
   // Filter flights that belong to this airline
   const airlineFlights = flights.filter(flight => flight.airline === airlineCompany);

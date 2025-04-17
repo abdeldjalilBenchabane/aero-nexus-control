@@ -23,6 +23,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
+        
+        // Ensure the user object has the required fields
+        if (parsedUser.role === 'airline' && !parsedUser.airlineId) {
+          // For airline users, use their ID as airlineId if not present
+          parsedUser.airlineId = parsedUser.id;
+        }
+        
+        // Add name parts if not present
+        if (!parsedUser.firstName || !parsedUser.lastName) {
+          const nameParts = parsedUser.name?.split(' ') || ['User', ''];
+          parsedUser.firstName = parsedUser.firstName || nameParts[0];
+          parsedUser.lastName = parsedUser.lastName || nameParts.slice(1).join(' ');
+        }
+        
         setUser(parsedUser);
         setIsAuthenticated(true);
       } catch (error) {
@@ -51,6 +65,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const data = await response.json();
       
       if (data.user) {
+        // Add additional fields if needed
+        if (data.user.role === 'airline' && !data.user.airlineId) {
+          data.user.airlineId = data.user.id;
+        }
+        
+        // Add name parts if not present
+        if (!data.user.firstName || !data.user.lastName) {
+          const nameParts = data.user.name?.split(' ') || ['User', ''];
+          data.user.firstName = data.user.firstName || nameParts[0];
+          data.user.lastName = data.user.lastName || nameParts.slice(1).join(' ');
+        }
+        
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('token', data.token);
         setUser(data.user);

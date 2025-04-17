@@ -8,6 +8,10 @@ export interface User {
   password?: string;  // Usually not returned in responses
   role: "admin" | "staff" | "passenger" | "airline";
   created_at?: string;
+  // Add these properties to match what's being used in components
+  firstName?: string;
+  lastName?: string;
+  airlineId?: string;
 }
 
 export interface AirlineProfile {

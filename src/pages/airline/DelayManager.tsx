@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import PageLayout from "@/components/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,26 +15,22 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const DelayManager = () => {
   const { user } = useAuth();
-  const airlineCompany = user?.airlineId || "Unknown Airline"; // In a real app, this would come from the user's profile
+  const airlineCompany = user?.airlineId || user?.id || "Unknown Airline";
   
-  // Filter flights that belong to this airline
   const airlineFlights = flights.filter(flight => flight.airline === airlineCompany);
   
-  // States
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [isDelayDialogOpen, setIsDelayDialogOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [delayReason, setDelayReason] = useState("");
-  const [delayDuration, setDelayDuration] = useState("60"); // Minutes
+  const [delayDuration, setDelayDuration] = useState("60");
   const [cancelReason, setCancelReason] = useState("");
   const [notifyPassengers, setNotifyPassengers] = useState(true);
   
-  // Get active flights (not arrived, not cancelled)
   const activeFlights = airlineFlights.filter(flight => 
     flight.status !== "arrived" && flight.status !== "cancelled"
   );
   
-  // Handle delay submission
   const handleDelaySubmit = () => {
     if (!selectedFlight) return;
     
@@ -46,14 +41,12 @@ const DelayManager = () => {
       notifyPassengers
     });
     
-    // Reset and close
     setIsDelayDialogOpen(false);
     setDelayReason("");
     setDelayDuration("60");
     setNotifyPassengers(true);
   };
   
-  // Handle cancel submission
   const handleCancelSubmit = () => {
     if (!selectedFlight) return;
     
@@ -63,7 +56,6 @@ const DelayManager = () => {
       notifyPassengers
     });
     
-    // Reset and close
     setIsCancelDialogOpen(false);
     setCancelReason("");
     setNotifyPassengers(true);
@@ -116,7 +108,6 @@ const DelayManager = () => {
           </CardContent>
         </Card>
         
-        {/* Delay Dialog */}
         <Dialog open={isDelayDialogOpen} onOpenChange={setIsDelayDialogOpen}>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
@@ -187,7 +178,6 @@ const DelayManager = () => {
           </DialogContent>
         </Dialog>
         
-        {/* Cancel Dialog */}
         <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
