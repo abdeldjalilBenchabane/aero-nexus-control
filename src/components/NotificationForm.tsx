@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User, Flight } from "@/lib/types";
+import { User, Flight, Notification } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { flights } from "@/lib/db";
+import { flights, addNotification } from "@/lib/db";
+import { notificationApi } from "@/lib/api";
 
 interface NotificationFormProps {
   allowTargetRole?: boolean;
@@ -42,11 +43,16 @@ const NotificationForm = ({
     // Filter flights based on user role
     if (user?.role === "airline" && user.airlineId) {
       // Airline users can only see their flights
-      setAvailableFlights(flights.filter(f => f.airline === user.airlineId));
+      const airlineFlights = flights.filter(f => f.airline_id === user.airlineId || f.airline === user.airlineId);
+      setAvailableFlights(airlineFlights);
     } else {
       // Admin and staff can see all flights
-      const filteredFlights = flightFilter ? flights.filter(flightFilter) : flights;
-      setAvailableFlights(filteredFlights);
+      if (flightFilter) {
+        const filteredFlights = flights.filter(flight => flightFilter(flight as unknown as Flight));
+        setAvailableFlights(filteredFlights as unknown as Flight[]);
+      } else {
+        setAvailableFlights(flights as unknown as Flight[]);
+      }
     }
   }, [user, flightFilter]);
 
@@ -68,33 +74,67 @@ const NotificationForm = ({
         throw new Error("You must be logged in to send notifications");
       }
       
-      const newNotification = addNotification({
+      const notificationData = {
+        title: `Notification from ${user.role}`,
         message,
-        timestamp: new Date().toISOString(),
-        sender: {
-          id: user.id,
-          role: user.role as "admin" | "staff" | "airline",
-        },
-        targetType,
-        targetId: targetType !== "all" ? targetId : undefined,
-      });
-      
-      setSuccess(true);
-      setMessage("");
-      setTargetType("all");
-      setTargetId("");
-      
-      if (onSuccess) {
-        onSuccess();
+        target_role: targetType === "role" ? targetId as "admin" | "staff" | "passenger" | "airline" | "all" : "all",
+        flight_id: targetType === "flight" ? targetId : undefined,
+      };
+
+      // If there's a custom send handler, use it
+      if (onSendNotification) {
+        onSendNotification({
+          ...notificationData,
+          timestamp: new Date().toISOString(),
+          sender: {
+            id: user.id,
+            role: user.role as "admin" | "staff" | "airline",
+          },
+          targetType,
+          targetId: targetType !== "all" ? targetId : undefined,
+        }).then(() => {
+          setSuccess(true);
+          setMessage("");
+          setTargetType("all");
+          setTargetId("");
+          
+          if (onSuccess) onSuccess();
+          
+          // Reset success message after 3 seconds
+          setTimeout(() => {
+            setSuccess(false);
+          }, 3000);
+        }).catch(err => {
+          setError(err instanceof Error ? err.message : "An error occurred");
+        }).finally(() => {
+          setLoading(false);
+        });
+        return;
       }
       
-      // Reset success message after 3 seconds
-      setTimeout(() => {
-        setSuccess(false);
-      }, 3000);
+      // Otherwise, use the API directly
+      notificationApi.create(notificationData)
+        .then(() => {
+          setSuccess(true);
+          setMessage("");
+          setTargetType("all");
+          setTargetId("");
+          
+          if (onSuccess) onSuccess();
+          
+          // Reset success message after 3 seconds
+          setTimeout(() => {
+            setSuccess(false);
+          }, 3000);
+        })
+        .catch(err => {
+          setError(err instanceof Error ? err.message : "An error occurred");
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
       setLoading(false);
     }
   };
@@ -174,7 +214,7 @@ const NotificationForm = ({
             <SelectContent>
               {availableFlights.map((flight) => (
                 <SelectItem key={flight.id} value={flight.id}>
-                  {flight.flightNumber} - {flight.origin} to {flight.destination}
+                  {flight.flight_number || flight.flightNumber} - {flight.origin || "-"} to {flight.destination}
                 </SelectItem>
               ))}
             </SelectContent>

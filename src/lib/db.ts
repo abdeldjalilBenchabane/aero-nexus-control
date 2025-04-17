@@ -1,4 +1,3 @@
-
 // Mock database for the airport flight management system
 export interface User {
   id: string;
@@ -430,7 +429,7 @@ export const getAvailableRunways = (startTime: string, endTime: string): Runway[
   });
 };
 
-// Function to add a new notification
+// Ensure addNotification is properly exported
 export const addNotification = (notification: Omit<Notification, "id">): Notification => {
   const newNotification: Notification = {
     ...notification,

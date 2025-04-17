@@ -14,7 +14,7 @@ const PassengerNotify = () => {
   const airlineCompany = user?.airlineId || user?.id || "Unknown Airline";
   
   // Filter flights that belong to this airline
-  const airlineFlights = flights.filter(flight => flight.airline === airlineCompany);
+  const airlineFlights = flights.filter(flight => flight.airline_id === airlineCompany || flight.airline === airlineCompany);
 
   return (
     <PageLayout title="Notify Passengers">
@@ -38,7 +38,7 @@ const PassengerNotify = () => {
             
             <NotificationForm 
               allowedTargets={["flight"]}
-              flightFilter={(flight) => flight.airline === airlineCompany}
+              flightFilter={(flight) => flight.airline_id === airlineCompany || flight.airline === airlineCompany}
               onSendNotification={(data) => {
                 console.log("Sending airline notification:", data);
                 return new Promise((resolve) => {
