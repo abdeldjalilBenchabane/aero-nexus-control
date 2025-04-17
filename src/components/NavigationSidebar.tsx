@@ -85,9 +85,9 @@ const NavigationSidebar = ({ activePath }: NavigationSidebarProps) => {
   const adminNav = [
     { path: "/admin/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
     { path: "/admin/users", label: "Users", icon: <Users size={18} /> },
-    { path: "/admin/send-notification", label: "Notifications", icon: <Bell size={18} /> },
     { path: "/admin/gates", label: "Gates", icon: <Building2 size={18} /> },
     { path: "/admin/runways", label: "Runways", icon: <LandmarkIcon size={18} /> },
+    { path: "/admin/send-notification", label: "Notifications", icon: <Bell size={18} /> },
     { path: "/admin/reports", label: "Reports", icon: <BarChart size={18} /> },
     { path: "/admin/settings", label: "Settings", icon: <Settings size={18} /> },
   ];
@@ -96,7 +96,7 @@ const NavigationSidebar = ({ activePath }: NavigationSidebarProps) => {
     { path: "/staff/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
     { path: "/staff/flights", label: "Manage Flights", icon: <PlaneTakeoff size={18} /> },
     { path: "/staff/assign-gate-runway", label: "Gates & Runways", icon: <MapPin size={18} /> },
-    { path: "/staff/notifications", label: "Send Notification", icon: <Bell size={18} /> },
+    { path: "/staff/send-notification", label: "Send Notification", icon: <Bell size={18} /> },
     { path: "/staff/real-time-flights", label: "Live Flights", icon: <Compass size={18} /> },
   ];
 
@@ -110,8 +110,8 @@ const NavigationSidebar = ({ activePath }: NavigationSidebarProps) => {
   const passengerNav = [
     { path: "/passenger/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
     { path: "/passenger/search-flights", label: "Search Flights", icon: <Search size={18} /> },
-    { path: "/passenger/reservations", label: "My Reservations", icon: <Ticket size={18} /> },
-    { path: "/passenger/notifications", label: "Notifications", icon: <Bell size={18} /> },
+    { path: "/passenger/my-reservations", label: "My Reservations", icon: <Ticket size={18} /> },
+    { path: "/passenger/my-notifications", label: "Notifications", icon: <Bell size={18} /> },
     { path: "/passenger/flight-status", label: "Flight Status", icon: <GanttChartSquare size={18} /> },
   ];
 

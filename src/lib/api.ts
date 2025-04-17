@@ -45,6 +45,8 @@ export const flightApi = {
   update: (id: string, flight: Partial<Flight>) => apiFetch<Flight>(`/flights/${id}`, "PUT", flight),
   delete: (id: string) => apiFetch<void>(`/flights/${id}`, "DELETE"),
   getByAirline: (airlineId: string) => apiFetch<Flight[]>(`/flights/airline/${airlineId}`),
+  search: (params: { origin?: string, destination?: string, date?: string }) => 
+    apiFetch<Flight[]>("/flights/search", "POST", params),
 };
 
 // User API
@@ -89,6 +91,6 @@ export const reservationApi = {
   getAll: () => apiFetch<Reservation[]>("/reservations"),
   getForUser: (userId: string) => apiFetch<Reservation[]>(`/reservations/user/${userId}`),
   getForFlight: (flightId: string) => apiFetch<Reservation[]>(`/reservations/flight/${flightId}`),
-  create: (reservation: { flight_id: string, user_id: string, seat_id: string }) => 
+  create: (reservation: { flight_id: string, user_id: string, seat_number: string }) => 
     apiFetch<{ success: boolean, reservation: Reservation }>("/reservations", "POST", reservation),
 };

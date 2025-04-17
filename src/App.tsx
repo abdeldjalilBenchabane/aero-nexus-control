@@ -64,9 +64,19 @@ const App = () => (
                 <AdminDashboard />
               </ProtectedRoute>
             } />
-            <Route path="/admin/manage-users" element={
+            <Route path="/admin/users" element={
               <ProtectedRoute allowedRoles={["admin"]}>
                 <ManageUsers />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/gates" element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <NotFound />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/runways" element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <NotFound />
               </ProtectedRoute>
             } />
             <Route path="/admin/reports" element={
@@ -74,7 +84,7 @@ const App = () => (
                 <Reports />
               </ProtectedRoute>
             } />
-            <Route path="/admin/system-settings" element={
+            <Route path="/admin/settings" element={
               <ProtectedRoute allowedRoles={["admin"]}>
                 <SystemSettings />
               </ProtectedRoute>
@@ -91,7 +101,7 @@ const App = () => (
                 <StaffDashboard />
               </ProtectedRoute>
             } />
-            <Route path="/staff/manage-flights" element={
+            <Route path="/staff/flights" element={
               <ProtectedRoute allowedRoles={["staff"]}>
                 <ManageFlights />
               </ProtectedRoute>
@@ -118,7 +128,7 @@ const App = () => (
                 <AirlineDashboard />
               </ProtectedRoute>
             } />
-            <Route path="/airline/my-flights" element={
+            <Route path="/airline/flights" element={
               <ProtectedRoute allowedRoles={["airline"]}>
                 <MyFlights />
               </ProtectedRoute>
@@ -158,6 +168,11 @@ const App = () => (
             <Route path="/passenger/my-notifications" element={
               <ProtectedRoute allowedRoles={["passenger"]}>
                 <MyNotifications />
+              </ProtectedRoute>
+            } />
+            <Route path="/passenger/flight-details/:id" element={
+              <ProtectedRoute allowedRoles={["passenger"]}>
+                <FlightDetails />
               </ProtectedRoute>
             } />
             

@@ -1,47 +1,48 @@
 
 import { useState, useEffect } from 'react';
-import { Button } from './ui/button';
-import { Alert, AlertDescription, AlertTitle } from './ui/alert';
-import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 
 const DatabaseConnectionTest = () => {
-  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'testing' | 'success' | 'failed'>('idle');
+  const [status, setStatus] = useState<'idle' | 'testing' | 'success' | 'failed'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
+  
+  // Test connection on component mount
+  useEffect(() => {
+    testConnection();
+  }, []);
+  
   const testConnection = async () => {
     try {
-      setConnectionStatus('testing');
+      setStatus('testing');
       setErrorMessage(null);
       
+      // Attempt to connect to the database
       const response = await fetch('http://localhost:3001/api/test-db-connection');
       const data = await response.json();
       
       if (data.success) {
-        setConnectionStatus('success');
+        setStatus('success');
       } else {
-        setConnectionStatus('failed');
+        setStatus('failed');
         setErrorMessage(data.message || 'Unknown database error');
       }
     } catch (error) {
-      setConnectionStatus('failed');
-      setErrorMessage('Failed to connect to server. Make sure your server is running.');
       console.error('Connection test error:', error);
+      setStatus('failed');
+      setErrorMessage('Failed to connect to the database service');
     }
   };
-
-  useEffect(() => {
-    // Test connection on component mount
-    testConnection();
-  }, []);
-
+  
   return (
     <div className="space-y-4">
       <Button 
-        onClick={testConnection} 
-        disabled={connectionStatus === 'testing'}
+        onClick={testConnection}
+        disabled={status === 'testing'}
         className="w-full"
       >
-        {connectionStatus === 'testing' ? (
+        {status === 'testing' ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Testing Connection...
@@ -51,17 +52,17 @@ const DatabaseConnectionTest = () => {
         )}
       </Button>
       
-      {connectionStatus === 'success' && (
+      {status === 'success' && (
         <Alert className="bg-green-50 border-green-200">
           <CheckCircle className="h-4 w-4 text-green-600" />
           <AlertTitle className="text-green-800">Connected</AlertTitle>
           <AlertDescription className="text-green-700">
-            Successfully connected to the airport_management database.
+            Successfully connected to the airport_db database.
           </AlertDescription>
         </Alert>
       )}
       
-      {connectionStatus === 'failed' && (
+      {status === 'failed' && (
         <Alert className="bg-red-50 border-red-200">
           <XCircle className="h-4 w-4 text-red-600" />
           <AlertTitle className="text-red-800">Connection Failed</AlertTitle>
