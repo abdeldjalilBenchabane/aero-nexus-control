@@ -46,16 +46,16 @@ const NotificationForm = ({
     if (user?.role === "airline" && user.airlineId) {
       // Airline users can only see their flights
       const airlineFlights = flights.filter(f => 
-        (f.airline_id && f.airline_id === user.airlineId) || 
-        (f.airline && f.airline === user.airlineId)
+        (f.airline && f.airline === user.airlineId) || 
+        (f.airline === user.airlineId)
       );
       
       // Map to the Flight type from types.ts with required properties
       const mappedFlights = airlineFlights.map(f => ({
         id: f.id,
         flight_number: f.flightNumber || "",
-        airline_id: f.airline_id || f.airline,
         airline: f.airline,
+        airline_id: f.airline, // Map airline to airline_id for compatibility
         destination: f.destination,
         departure_time: f.departureTime || "",
         arrival_time: f.arrivalTime || "",
@@ -73,8 +73,8 @@ const NotificationForm = ({
           const mappedFlight = {
             id: f.id,
             flight_number: f.flightNumber || "",
-            airline_id: f.airline_id || f.airline,
             airline: f.airline,
+            airline_id: f.airline, // Map airline to airline_id for compatibility
             destination: f.destination,
             departure_time: f.departureTime || "",
             arrival_time: f.arrivalTime || "",
@@ -89,8 +89,8 @@ const NotificationForm = ({
         const mappedFlights = filteredFlights.map(f => ({
           id: f.id,
           flight_number: f.flightNumber || "",
-          airline_id: f.airline_id || f.airline,
           airline: f.airline,
+          airline_id: f.airline, // Map airline to airline_id for compatibility
           destination: f.destination,
           departure_time: f.departureTime || "",
           arrival_time: f.arrivalTime || "",
@@ -105,8 +105,8 @@ const NotificationForm = ({
         const mappedFlights = flights.map(f => ({
           id: f.id,
           flight_number: f.flightNumber || "",
-          airline_id: f.airline_id || f.airline,
           airline: f.airline,
+          airline_id: f.airline, // Map airline to airline_id for compatibility
           destination: f.destination,
           departure_time: f.departureTime || "",
           arrival_time: f.arrivalTime || "",
