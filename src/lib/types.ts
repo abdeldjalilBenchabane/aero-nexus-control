@@ -20,17 +20,23 @@ export interface AirlineProfile {
 export interface Gate {
   id: string;
   gate_number: string;
+  name?: string;
+  terminal?: string;
+  isAvailable?: boolean;
+  scheduledFlights?: number;
 }
 
 export interface Runway {
   id: string;
   runway_number: string;
+  name?: string;
+  isAvailable?: boolean;
 }
 
 export interface Flight {
   id: string;
   flight_number: string;
-  airline_id?: string;  // Add airline_id as an optional property
+  airline_id?: string;  // Add airline_id as a property
   airline?: string; // For backward compatibility
   airline_name?: string; // Joined field
   gate_id?: string;
@@ -41,11 +47,15 @@ export interface Flight {
   arrival_time: string;
   origin?: string; // Add this field to support components using it
   destination: string;
-  status: "scheduled" | "delayed" | "cancelled" | "landed" | "in_air";
+  status: "scheduled" | "delayed" | "cancelled" | "landed" | "in_air" | "boarding" | "departed" | "arrived";
   price: number;
   flightNumber?: string; // For backward compatibility
   departureTime?: string; // For backward compatibility
   arrivalTime?: string; // For backward compatibility
+  gate?: string; // For backward compatibility
+  runway?: string; // For backward compatibility
+  availableSeats?: string[]; // For backward compatibility
+  bookedSeats?: Array<{seatId: string}>; // For backward compatibility
 }
 
 export interface Seat {
@@ -66,6 +76,11 @@ export interface Reservation {
   departure_time?: string; // Joined field
   arrival_time?: string; // Joined field
   reservation_time: string;
+  // Add these legacy fields for backward compatibility
+  userId?: string;
+  flightId?: string;
+  timestamp?: string;
+  seat?: string;
 }
 
 export interface Notification {

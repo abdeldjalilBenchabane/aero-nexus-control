@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import PageLayout from "@/components/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import FlightTable from "@/components/FlightTable";
-import { flights, Flight } from "@/lib/db";
+import { flights } from "@/lib/db";
+import { Flight } from "@/lib/types";
 import { Search, ArrowUpDown, RefreshCw } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,16 +19,13 @@ const RealTimeFlights = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
-  // Filter and sort flights when dependencies change
   useEffect(() => {
     let result = [...flights];
     
-    // Apply status filter
     if (statusFilter !== "all") {
       result = result.filter(flight => flight.status === statusFilter);
     }
     
-    // Apply search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       result = result.filter(
@@ -40,12 +37,10 @@ const RealTimeFlights = () => {
       );
     }
     
-    // Apply sorting
     result.sort((a, b) => {
-      let valueA: any = a[sortField];
-      let valueB: any = b[sortField];
+      let valueA: any = a[sortField as keyof Flight];
+      let valueB: any = b[sortField as keyof Flight];
       
-      // Handle date fields
       if (typeof valueA === "string" && (sortField === "departureTime" || sortField === "arrivalTime")) {
         valueA = new Date(valueA).getTime();
         valueB = new Date(valueB).getTime();
@@ -59,12 +54,10 @@ const RealTimeFlights = () => {
     setFilteredFlights(result);
   }, [searchTerm, statusFilter, sortField, sortDirection, lastUpdated]);
 
-  // Handle search input
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 
-  // Handle sort toggle
   const toggleSort = (field: keyof Flight) => {
     if (field === sortField) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -74,16 +67,12 @@ const RealTimeFlights = () => {
     }
   };
 
-  // Refresh data
   const refreshData = () => {
-    // In a real app, this would fetch fresh data from the API
     setLastUpdated(new Date());
   };
 
-  // Update flight status
   const updateFlightStatus = (flight: Flight, newStatus: Flight["status"]) => {
     console.log(`Updating flight ${flight.flightNumber} status to ${newStatus}`);
-    // In a real app, this would make an API call to update the status
     refreshData();
   };
 
@@ -116,7 +105,6 @@ const RealTimeFlights = () => {
         </Card>
 
         <div className="flex flex-col md:flex-row gap-4 items-start">
-          {/* Search & Filter Controls */}
           <Card className="w-full md:w-64">
             <CardHeader>
               <CardTitle>Filters</CardTitle>
@@ -180,7 +168,6 @@ const RealTimeFlights = () => {
             </CardContent>
           </Card>
 
-          {/* Flight Table */}
           <div className="flex-1 w-full">
             <FlightTable 
               flights={filteredFlights}
@@ -190,7 +177,6 @@ const RealTimeFlights = () => {
                 {
                   label: "Update",
                   onClick: (flight) => {
-                    // In a real app, this would open a dialog to update flight status
                     const nextStatus: Record<Flight["status"], Flight["status"]> = {
                       scheduled: "boarding",
                       boarding: "departed",

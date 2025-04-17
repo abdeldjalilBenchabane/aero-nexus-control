@@ -3,11 +3,11 @@ import { useState } from "react";
 import PageLayout from "@/components/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { flights } from "@/lib/db";
+import { Flight } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import NotificationForm from "@/components/NotificationForm";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
-import { Flight } from "@/lib/types";
 
 const PassengerNotify = () => {
   const { user } = useAuth();

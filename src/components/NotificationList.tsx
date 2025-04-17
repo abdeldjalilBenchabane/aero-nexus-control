@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import { Bell, Info, AlertTriangle, CheckCircle, Check, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Notification } from "@/lib/db";
+import { Notification } from "@/lib/types";
+import { notifications } from "@/lib/db";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

@@ -1,6 +1,7 @@
 
 import { useState } from "react";
-import { Flight } from "@/lib/db";
+import { Flight } from "@/lib/types";
+import { flights } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

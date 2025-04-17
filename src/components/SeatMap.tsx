@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Flight } from "@/lib/db";
+import { Flight } from "@/lib/types";
+import { flights } from "@/lib/db";
 
 interface SeatMapProps {
   flight?: Flight;

@@ -199,7 +199,7 @@ export const reservations: Reservation[] = [
     arrival_time: "2023-06-16T12:00:00Z",
     reservation_time: "2023-06-11T14:30:00Z",
     // Legacy fields
-    userId: "5",
+    userId: "5", 
     flightId: "flight2",
     timestamp: "2023-06-11T14:30:00Z",
     seat: "A2"
