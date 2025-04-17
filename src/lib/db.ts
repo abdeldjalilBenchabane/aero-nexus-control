@@ -1,6 +1,9 @@
 
 // Mock database for the airport flight management system
-import { User, Flight, Gate, Runway, Notification, Reservation } from './types';
+import { User, Flight, Gate, Runway, Notification, Reservation, AirlineProfile } from './types';
+
+// Re-export the types to maintain compatibility with existing imports
+export { User, Flight, Gate, Runway, Notification, Reservation, AirlineProfile };
 
 // Mock data
 export const users: User[] = [

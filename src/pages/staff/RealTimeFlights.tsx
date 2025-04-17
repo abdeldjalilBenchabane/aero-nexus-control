@@ -76,6 +76,19 @@ const RealTimeFlights = () => {
     refreshData();
   };
 
+  const handleUpdateUser = () => {
+  const nextStatus: Record<Flight["status"], Flight["status"]> = {
+    scheduled: "boarding",
+    boarding: "departed",
+    departed: "arrived",
+    arrived: "arrived",
+    delayed: "scheduled",
+    cancelled: "scheduled",
+    landed: "arrived",    // Add the missing statuses
+    in_air: "landed"      // Add the missing statuses
+  };
+}
+
   return (
     <PageLayout title="Real-Time Flight Tracking">
       <div className="space-y-6">
@@ -183,7 +196,9 @@ const RealTimeFlights = () => {
                       departed: "arrived",
                       arrived: "arrived",
                       delayed: "scheduled",
-                      cancelled: "scheduled"
+                      cancelled: "scheduled",
+                      landed: "arrived",
+                      in_air: "landed"
                     };
                     updateFlightStatus(flight, nextStatus[flight.status]);
                   },
