@@ -1,300 +1,287 @@
+
 // Mock database for the airport flight management system
-export interface User {
-  id: string;
-  username: string;
-  password: string;
-  role: "admin" | "staff" | "airline" | "passenger";
-  firstName: string;
-  lastName: string;
-  email: string;
-  airlineId?: string; // Only for airline users
-  flightIds?: string[]; // For passengers - flights they are booked on
-}
-
-export interface Flight {
-  id: string;
-  flightNumber: string;
-  airline: string;
-  origin: string;
-  destination: string;
-  departureTime: string;
-  arrivalTime: string;
-  status: "scheduled" | "boarding" | "departed" | "arrived" | "delayed" | "cancelled";
-  gate?: string;
-  runway?: string;
-  availableSeats: string[]; // Array of seat identifiers (e.g., "A1", "B2")
-  bookedSeats: {
-    seatId: string;
-    passengerId: string;
-  }[];
-}
-
-export interface Gate {
-  id: string;
-  name: string;
-  terminal: string;
-  isAvailable: boolean;
-  scheduledFlights: {
-    flightId: string;
-    from: string; // ISO date string
-    to: string; // ISO date string
-  }[];
-}
-
-export interface Runway {
-  id: string;
-  name: string;
-  isAvailable: boolean;
-  scheduledUse: {
-    flightId: string;
-    from: string; // ISO date string
-    to: string; // ISO date string
-  }[];
-}
-
-export interface Notification {
-  id: string;
-  message: string;
-  timestamp: string;
-  sender: {
-    id: string;
-    role: "admin" | "staff" | "airline";
-  };
-  targetType: "all" | "role" | "flight";
-  targetId?: string; // Role name or flight ID
-  flightId?: string; // Related flight ID for notifications about flights
-  senderRole?: string; // Role of the sender for display purposes
-}
+import { User, Flight, Gate, Runway, Notification, Reservation } from './types';
 
 // Mock data
 export const users: User[] = [
   {
     id: "1",
-    username: "admin",
+    name: "Admin User",
+    email: "admin@airport.com",
     password: "admin123", // In a real app, this would be hashed
     role: "admin",
-    firstName: "Admin",
-    lastName: "User",
-    email: "admin@airport.com"
+    created_at: "2023-01-01T00:00:00Z"
   },
   {
     id: "2",
-    username: "staff1",
+    name: "Staff Member",
+    email: "staff@airport.com",
     password: "staff123",
     role: "staff",
-    firstName: "Staff",
-    lastName: "Member",
-    email: "staff@airport.com"
+    created_at: "2023-01-02T00:00:00Z"
   },
   {
     id: "3",
-    username: "airline1",
+    name: "Airline Rep",
+    email: "airline@skyways.com",
     password: "airline123",
     role: "airline",
-    firstName: "Airline",
-    lastName: "Rep",
-    email: "airline@skyways.com",
+    created_at: "2023-01-03T00:00:00Z",
     airlineId: "skyways"
   },
   {
     id: "4",
-    username: "passenger1",
+    name: "John Traveler",
+    email: "john@example.com",
     password: "passenger123",
     role: "passenger",
-    firstName: "John",
-    lastName: "Traveler",
-    email: "john@example.com",
-    flightIds: ["flight1", "flight3"]
+    created_at: "2023-01-04T00:00:00Z"
   },
   {
     id: "5",
-    username: "passenger2",
+    name: "Jane Doe",
+    email: "jane@example.com",
     password: "passenger123",
     role: "passenger",
-    firstName: "Jane",
-    lastName: "Doe",
-    email: "jane@example.com",
-    flightIds: ["flight2"]
+    created_at: "2023-01-05T00:00:00Z"
   }
 ];
 
 export const flights: Flight[] = [
   {
     id: "flight1",
-    flightNumber: "SK101",
-    airline: "skyways",
+    flight_number: "SK101",
+    airline_id: "skyways",
+    airline: "skyways", // For backward compatibility
     origin: "New York (JFK)",
     destination: "London (LHR)",
-    departureTime: "2023-06-15T08:00:00Z",
-    arrivalTime: "2023-06-15T20:00:00Z",
+    departure_time: "2023-06-15T08:00:00Z",
+    arrival_time: "2023-06-15T20:00:00Z",
     status: "scheduled",
-    gate: "A1",
-    runway: "R1",
-    availableSeats: ["A2", "A3", "B1", "B2", "C1", "C2"],
-    bookedSeats: [
-      {
-        seatId: "A1",
-        passengerId: "4"
-      }
-    ]
+    gate_id: "gate1",
+    gate_number: "A1",
+    runway_id: "runway1",
+    runway_number: "R1",
+    price: 350,
+    // Legacy fields for compatibility
+    flightNumber: "SK101",
+    departureTime: "2023-06-15T08:00:00Z",
+    arrivalTime: "2023-06-15T20:00:00Z"
   },
   {
     id: "flight2",
-    flightNumber: "SK202",
-    airline: "skyways",
+    flight_number: "SK202",
+    airline_id: "skyways",
+    airline: "skyways", // For backward compatibility
     origin: "London (LHR)",
     destination: "Paris (CDG)",
-    departureTime: "2023-06-16T10:00:00Z",
-    arrivalTime: "2023-06-16T12:00:00Z",
+    departure_time: "2023-06-16T10:00:00Z",
+    arrival_time: "2023-06-16T12:00:00Z",
     status: "scheduled",
-    gate: "B3",
-    runway: "R2",
-    availableSeats: ["A1", "A3", "B1", "B3", "C1", "C3"],
-    bookedSeats: [
-      {
-        seatId: "A2",
-        passengerId: "5"
-      },
-      {
-        seatId: "B2",
-        passengerId: "5"
-      }
-    ]
+    gate_id: "gate2",
+    gate_number: "B3",
+    runway_id: "runway2",
+    runway_number: "R2",
+    price: 120,
+    // Legacy fields for compatibility
+    flightNumber: "SK202",
+    departureTime: "2023-06-16T10:00:00Z",
+    arrivalTime: "2023-06-16T12:00:00Z"
   },
   {
     id: "flight3",
-    flightNumber: "SK303",
-    airline: "skyways",
+    flight_number: "SK303",
+    airline_id: "skyways",
+    airline: "skyways", // For backward compatibility
     origin: "Paris (CDG)",
     destination: "Tokyo (HND)",
-    departureTime: "2023-06-17T14:00:00Z",
-    arrivalTime: "2023-06-18T10:00:00Z",
+    departure_time: "2023-06-17T14:00:00Z",
+    arrival_time: "2023-06-18T10:00:00Z",
     status: "scheduled",
-    gate: "C2",
-    runway: "R3",
-    availableSeats: ["A2", "A3", "B2", "B3", "C2", "C3"],
-    bookedSeats: [
-      {
-        seatId: "A1",
-        passengerId: "4"
-      },
-      {
-        seatId: "B1",
-        passengerId: "4"
-      },
-      {
-        seatId: "C1",
-        passengerId: "4"
-      }
-    ]
+    gate_id: "gate3",
+    gate_number: "C2",
+    runway_id: "runway3",
+    runway_number: "R3",
+    price: 850,
+    // Legacy fields for compatibility
+    flightNumber: "SK303",
+    departureTime: "2023-06-17T14:00:00Z",
+    arrivalTime: "2023-06-18T10:00:00Z"
   }
 ];
 
 export const gates: Gate[] = [
   {
     id: "gate1",
-    name: "A1",
-    terminal: "Terminal 1",
-    isAvailable: false,
-    scheduledFlights: [
-      {
-        flightId: "flight1",
-        from: "2023-06-15T07:00:00Z",
-        to: "2023-06-15T09:00:00Z"
-      }
-    ]
+    gate_number: "A1"
   },
   {
     id: "gate2",
-    name: "B3",
-    terminal: "Terminal 2",
-    isAvailable: false,
-    scheduledFlights: [
-      {
-        flightId: "flight2",
-        from: "2023-06-16T09:00:00Z",
-        to: "2023-06-16T11:00:00Z"
-      }
-    ]
+    gate_number: "B3"
   },
   {
     id: "gate3",
-    name: "C2",
-    terminal: "Terminal 3",
-    isAvailable: false,
-    scheduledFlights: [
-      {
-        flightId: "flight3",
-        from: "2023-06-17T13:00:00Z",
-        to: "2023-06-17T15:00:00Z"
-      }
-    ]
-  },
-  {
-    id: "gate4",
-    name: "A2",
-    terminal: "Terminal 1",
-    isAvailable: true,
-    scheduledFlights: []
-  },
-  {
-    id: "gate5",
-    name: "B2",
-    terminal: "Terminal 2",
-    isAvailable: true,
-    scheduledFlights: []
+    gate_number: "C2"
   }
 ];
 
 export const runways: Runway[] = [
   {
     id: "runway1",
-    name: "R1",
-    isAvailable: false,
-    scheduledUse: [
-      {
-        flightId: "flight1",
-        from: "2023-06-15T08:00:00Z",
-        to: "2023-06-15T08:30:00Z"
-      }
-    ]
+    runway_number: "R1"
   },
   {
     id: "runway2",
-    name: "R2",
-    isAvailable: false,
-    scheduledUse: [
-      {
-        flightId: "flight2",
-        from: "2023-06-16T10:00:00Z",
-        to: "2023-06-16T10:30:00Z"
-      }
-    ]
+    runway_number: "R2"
   },
   {
     id: "runway3",
-    name: "R3",
-    isAvailable: false,
-    scheduledUse: [
-      {
-        flightId: "flight3",
-        from: "2023-06-17T14:00:00Z",
-        to: "2023-06-17T14:30:00Z"
-      }
-    ]
+    runway_number: "R3"
+  }
+];
+
+export const seats: { id: string; flight_id: string; seat_number: string; is_reserved: boolean }[] = [
+  { id: "seat1", flight_id: "flight1", seat_number: "A1", is_reserved: true },
+  { id: "seat2", flight_id: "flight1", seat_number: "A2", is_reserved: false },
+  { id: "seat3", flight_id: "flight1", seat_number: "A3", is_reserved: false },
+  { id: "seat4", flight_id: "flight1", seat_number: "B1", is_reserved: false },
+  { id: "seat5", flight_id: "flight1", seat_number: "B2", is_reserved: false },
+  { id: "seat6", flight_id: "flight1", seat_number: "C1", is_reserved: false },
+  { id: "seat7", flight_id: "flight1", seat_number: "C2", is_reserved: false },
+  
+  { id: "seat8", flight_id: "flight2", seat_number: "A1", is_reserved: false },
+  { id: "seat9", flight_id: "flight2", seat_number: "A2", is_reserved: true },
+  { id: "seat10", flight_id: "flight2", seat_number: "A3", is_reserved: false },
+  { id: "seat11", flight_id: "flight2", seat_number: "B1", is_reserved: false },
+  { id: "seat12", flight_id: "flight2", seat_number: "B2", is_reserved: true },
+  { id: "seat13", flight_id: "flight2", seat_number: "B3", is_reserved: false },
+  { id: "seat14", flight_id: "flight2", seat_number: "C1", is_reserved: false },
+  { id: "seat15", flight_id: "flight2", seat_number: "C3", is_reserved: false },
+  
+  { id: "seat16", flight_id: "flight3", seat_number: "A1", is_reserved: true },
+  { id: "seat17", flight_id: "flight3", seat_number: "A2", is_reserved: false },
+  { id: "seat18", flight_id: "flight3", seat_number: "A3", is_reserved: false },
+  { id: "seat19", flight_id: "flight3", seat_number: "B1", is_reserved: true },
+  { id: "seat20", flight_id: "flight3", seat_number: "B2", is_reserved: false },
+  { id: "seat21", flight_id: "flight3", seat_number: "B3", is_reserved: false },
+  { id: "seat22", flight_id: "flight3", seat_number: "C1", is_reserved: true },
+  { id: "seat23", flight_id: "flight3", seat_number: "C2", is_reserved: false },
+  { id: "seat24", flight_id: "flight3", seat_number: "C3", is_reserved: false }
+];
+
+export const reservations: Reservation[] = [
+  {
+    id: "res1",
+    flight_id: "flight1",
+    user_id: "4",
+    seat_id: "seat1",
+    seat_number: "A1",
+    flight_number: "SK101",
+    destination: "London (LHR)",
+    departure_time: "2023-06-15T08:00:00Z",
+    arrival_time: "2023-06-15T20:00:00Z",
+    reservation_time: "2023-06-10T12:00:00Z",
+    // Legacy fields
+    userId: "4",
+    flightId: "flight1",
+    timestamp: "2023-06-10T12:00:00Z",
+    seat: "A1"
   },
   {
-    id: "runway4",
-    name: "R4",
-    isAvailable: true,
-    scheduledUse: []
+    id: "res2",
+    flight_id: "flight2",
+    user_id: "5",
+    seat_id: "seat9",
+    seat_number: "A2",
+    flight_number: "SK202",
+    destination: "Paris (CDG)",
+    departure_time: "2023-06-16T10:00:00Z",
+    arrival_time: "2023-06-16T12:00:00Z",
+    reservation_time: "2023-06-11T14:30:00Z",
+    // Legacy fields
+    userId: "5",
+    flightId: "flight2",
+    timestamp: "2023-06-11T14:30:00Z",
+    seat: "A2"
+  },
+  {
+    id: "res3",
+    flight_id: "flight2",
+    user_id: "5",
+    seat_id: "seat12",
+    seat_number: "B2",
+    flight_number: "SK202",
+    destination: "Paris (CDG)",
+    departure_time: "2023-06-16T10:00:00Z",
+    arrival_time: "2023-06-16T12:00:00Z",
+    reservation_time: "2023-06-11T14:35:00Z",
+    // Legacy fields
+    userId: "5",
+    flightId: "flight2",
+    timestamp: "2023-06-11T14:35:00Z",
+    seat: "B2"
+  },
+  {
+    id: "res4",
+    flight_id: "flight3",
+    user_id: "4",
+    seat_id: "seat16",
+    seat_number: "A1",
+    flight_number: "SK303",
+    destination: "Tokyo (HND)",
+    departure_time: "2023-06-17T14:00:00Z",
+    arrival_time: "2023-06-18T10:00:00Z",
+    reservation_time: "2023-06-12T09:15:00Z",
+    // Legacy fields
+    userId: "4",
+    flightId: "flight3",
+    timestamp: "2023-06-12T09:15:00Z",
+    seat: "A1"
+  },
+  {
+    id: "res5",
+    flight_id: "flight3",
+    user_id: "4",
+    seat_id: "seat19",
+    seat_number: "B1",
+    flight_number: "SK303",
+    destination: "Tokyo (HND)",
+    departure_time: "2023-06-17T14:00:00Z",
+    arrival_time: "2023-06-18T10:00:00Z",
+    reservation_time: "2023-06-12T09:20:00Z",
+    // Legacy fields
+    userId: "4",
+    flightId: "flight3",
+    timestamp: "2023-06-12T09:20:00Z",
+    seat: "B1"
+  },
+  {
+    id: "res6",
+    flight_id: "flight3",
+    user_id: "4",
+    seat_id: "seat22",
+    seat_number: "C1",
+    flight_number: "SK303",
+    destination: "Tokyo (HND)",
+    departure_time: "2023-06-17T14:00:00Z",
+    arrival_time: "2023-06-18T10:00:00Z",
+    reservation_time: "2023-06-12T09:25:00Z",
+    // Legacy fields
+    userId: "4",
+    flightId: "flight3",
+    timestamp: "2023-06-12T09:25:00Z",
+    seat: "C1"
   }
 ];
 
 export const notifications: Notification[] = [
   {
     id: "notif1",
+    title: "System Notification",
     message: "All flights are operating as scheduled today",
+    target_role: "all",
+    created_at: "2023-06-14T10:00:00Z",
+    // Legacy fields
     timestamp: "2023-06-14T10:00:00Z",
     sender: {
       id: "1",
@@ -304,29 +291,45 @@ export const notifications: Notification[] = [
   },
   {
     id: "notif2",
+    title: "Flight Update",
     message: "Flight SK101 is now boarding at Gate A1",
+    target_role: "passenger",
+    flight_id: "flight1",
+    created_at: "2023-06-15T07:30:00Z",
+    // Legacy fields
     timestamp: "2023-06-15T07:30:00Z",
     sender: {
       id: "2",
       role: "staff"
     },
     targetType: "flight",
-    targetId: "flight1"
+    targetId: "flight1",
+    flightId: "flight1"
   },
   {
     id: "notif3",
+    title: "Flight Delay",
     message: "Flight SK202 is delayed by 30 minutes",
+    target_role: "passenger",
+    flight_id: "flight2",
+    created_at: "2023-06-16T09:00:00Z",
+    // Legacy fields
     timestamp: "2023-06-16T09:00:00Z",
     sender: {
       id: "3",
       role: "airline"
     },
     targetType: "flight",
-    targetId: "flight2"
+    targetId: "flight2",
+    flightId: "flight2"
   },
   {
     id: "notif4",
+    title: "System Maintenance",
     message: "System maintenance scheduled for tonight",
+    target_role: "staff",
+    created_at: "2023-06-16T15:00:00Z",
+    // Legacy fields
     timestamp: "2023-06-16T15:00:00Z",
     sender: {
       id: "1",
@@ -338,8 +341,8 @@ export const notifications: Notification[] = [
 ];
 
 // Mock functions to simulate database operations
-export const getUser = (username: string, password: string): User | null => {
-  const user = users.find(u => u.username === username && u.password === password);
+export const getUser = (email: string, password: string): User | null => {
+  const user = users.find(u => u.email === email && u.password === password);
   return user || null;
 };
 
@@ -358,14 +361,13 @@ export const getFlightById = (id: string): Flight | null => {
 };
 
 export const getFlightsByAirline = (airlineId: string): Flight[] => {
-  return flights.filter(f => f.airline === airlineId);
+  return flights.filter(f => f.airline_id === airlineId || f.airline === airlineId);
 };
 
 export const getPassengerFlights = (passengerId: string): Flight[] => {
-  const user = users.find(u => u.id === passengerId && u.role === "passenger");
-  if (!user || !user.flightIds) return [];
-  
-  return flights.filter(f => user.flightIds?.includes(f.id));
+  const userReservations = reservations.filter(r => r.user_id === passengerId);
+  const flightIds = userReservations.map(r => r.flight_id);
+  return flights.filter(f => flightIds.includes(f.id));
 };
 
 export const getNotificationsForUser = (userId: string): Notification[] => {
@@ -374,58 +376,25 @@ export const getNotificationsForUser = (userId: string): Notification[] => {
 
   return notifications.filter(notif => {
     // All notifications
-    if (notif.targetType === "all") return true;
+    if (notif.target_role === "all") return true;
     
     // Role-specific notifications
-    if (notif.targetType === "role" && notif.targetId === user.role) return true;
+    if (notif.target_role === user.role) return true;
     
     // Flight-specific notifications
-    if (notif.targetType === "flight" && user.role === "passenger") {
-      return user.flightIds?.includes(notif.targetId || "");
+    if (notif.flight_id && user.role === "passenger") {
+      const userFlights = getPassengerFlights(userId).map(f => f.id);
+      return userFlights.includes(notif.flight_id);
     }
     
     // Airline users can see their flight notifications
-    if (notif.targetType === "flight" && user.role === "airline") {
-      const flight = getFlightById(notif.targetId || "");
-      return flight?.airline === user.airlineId;
+    if (notif.flight_id && user.role === "airline" && user.airlineId) {
+      const flight = getFlightById(notif.flight_id);
+      return flight?.airline_id === user.airlineId || flight?.airline === user.airlineId;
     }
     
     // Admin and staff can see all notifications
     return user.role === "admin" || user.role === "staff";
-  });
-};
-
-export const getAvailableGates = (startTime: string, endTime: string): Gate[] => {
-  return gates.filter(gate => {
-    if (gate.isAvailable) return true;
-    
-    // Check if there are any overlapping bookings
-    const hasOverlap = gate.scheduledFlights.some(booking => {
-      return (
-        (booking.from <= startTime && booking.to > startTime) ||
-        (booking.from < endTime && booking.to >= endTime) ||
-        (startTime <= booking.from && endTime >= booking.to)
-      );
-    });
-    
-    return !hasOverlap;
-  });
-};
-
-export const getAvailableRunways = (startTime: string, endTime: string): Runway[] => {
-  return runways.filter(runway => {
-    if (runway.isAvailable) return true;
-    
-    // Check if there are any overlapping bookings
-    const hasOverlap = runway.scheduledUse.some(booking => {
-      return (
-        (booking.from <= startTime && booking.to > startTime) ||
-        (booking.from < endTime && booking.to >= endTime) ||
-        (startTime <= booking.from && endTime >= booking.to)
-      );
-    });
-    
-    return !hasOverlap;
   });
 };
 
@@ -440,70 +409,6 @@ export const addNotification = (notification: Omit<Notification, "id">): Notific
   return newNotification;
 };
 
-// Reservation interface
-export interface Reservation {
-  id: string;
-  flightId: string;
-  passengerId: string;
-  seatId: string;
-  timestamp: string;
-  status: "confirmed" | "cancelled" | "checked-in";
-  userId?: string; // Legacy field for compatibility
-  seat?: string;   // Legacy field for compatibility
-}
-
-// Mock reservations data
-export const reservations: Reservation[] = [
-  {
-    id: "res1",
-    flightId: "flight1",
-    passengerId: "4",
-    seatId: "A1",
-    timestamp: "2023-06-10T12:00:00Z",
-    status: "confirmed"
-  },
-  {
-    id: "res2",
-    flightId: "flight2",
-    passengerId: "5",
-    seatId: "A2",
-    timestamp: "2023-06-11T14:30:00Z",
-    status: "confirmed"
-  },
-  {
-    id: "res3",
-    flightId: "flight2",
-    passengerId: "5",
-    seatId: "B2",
-    timestamp: "2023-06-11T14:35:00Z",
-    status: "confirmed"
-  },
-  {
-    id: "res4",
-    flightId: "flight3",
-    passengerId: "4",
-    seatId: "A1",
-    timestamp: "2023-06-12T09:15:00Z",
-    status: "confirmed"
-  },
-  {
-    id: "res5",
-    flightId: "flight3",
-    passengerId: "4",
-    seatId: "B1",
-    timestamp: "2023-06-12T09:20:00Z",
-    status: "confirmed"
-  },
-  {
-    id: "res6",
-    flightId: "flight3",
-    passengerId: "4",
-    seatId: "C1",
-    timestamp: "2023-06-12T09:25:00Z",
-    status: "confirmed"
-  }
-];
-
 // Book a seat on a flight
 export const bookSeat = (
   flightId: string,
@@ -515,30 +420,38 @@ export const bookSeat = (
     return { success: false, message: "Flight not found" };
   }
   
-  // Check if seat is available
-  if (!flight.availableSeats.includes(seatId)) {
-    return { success: false, message: "Seat is not available" };
+  const seat = seats.find(s => s.id === seatId);
+  if (!seat) {
+    return { success: false, message: "Seat not found" };
   }
   
-  // Remove from available seats
-  flight.availableSeats = flight.availableSeats.filter(s => s !== seatId);
-  
-  // Add to booked seats
-  flight.bookedSeats.push({
-    seatId,
-    passengerId
-  });
-  
-  // Add flight to user's flights
-  const passenger = users.find(u => u.id === passengerId);
-  if (passenger) {
-    if (!passenger.flightIds) {
-      passenger.flightIds = [];
-    }
-    if (!passenger.flightIds.includes(flightId)) {
-      passenger.flightIds.push(flightId);
-    }
+  if (seat.is_reserved) {
+    return { success: false, message: "Seat is already reserved" };
   }
+  
+  // Mark seat as reserved
+  seat.is_reserved = true;
+  
+  // Create reservation
+  const newReservation: Reservation = {
+    id: `res${reservations.length + 1}`,
+    flight_id: flightId,
+    user_id: passengerId,
+    seat_id: seatId,
+    seat_number: seat.seat_number,
+    flight_number: flight.flight_number,
+    destination: flight.destination,
+    departure_time: flight.departure_time,
+    arrival_time: flight.arrival_time,
+    reservation_time: new Date().toISOString(),
+    // Legacy fields
+    userId: passengerId,
+    flightId: flightId,
+    timestamp: new Date().toISOString(),
+    seat: seat.seat_number
+  };
+  
+  reservations.push(newReservation);
   
   return { success: true, message: "Seat booked successfully" };
 };

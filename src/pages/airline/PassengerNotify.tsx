@@ -16,7 +16,7 @@ const PassengerNotify = () => {
   
   // Filter flights that belong to this airline
   const airlineFlights = flights.filter(flight => 
-    (flight.airline && flight.airline === airlineCompany)
+    (flight.airline_id === airlineCompany || flight.airline === airlineCompany)
   );
 
   return (
@@ -42,7 +42,7 @@ const PassengerNotify = () => {
             <NotificationForm 
               allowedTargets={["flight"]}
               flightFilter={(flight: Flight) => 
-                (flight.airline && flight.airline === airlineCompany)
+                (flight.airline_id === airlineCompany || flight.airline === airlineCompany)
               }
               onSendNotification={(data) => {
                 console.log("Sending airline notification:", data);
