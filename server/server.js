@@ -38,11 +38,11 @@ const apiRouter = express.Router();
 // Authentication
 apiRouter.post('/auth/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
     
     const [users] = await pool.query(
       'SELECT * FROM users WHERE email = ? AND password = ?',
-      [username, password]
+      [email, password]
     );
     
     if (users.length === 0) {
