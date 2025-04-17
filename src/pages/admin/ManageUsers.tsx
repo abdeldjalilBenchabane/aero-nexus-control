@@ -30,7 +30,8 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { users as mockUsers, User } from "@/lib/db";
+import { users as mockUsers } from "@/lib/db";
+import type { User } from "@/lib/types";
 import { useToast } from "@/components/ui/use-toast";
 
 // Type helper for user role
@@ -44,6 +45,7 @@ const ManageUsers = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [newUser, setNewUser] = useState({
+    name: "",
     username: "",
     password: "", // Only used for new users
     firstName: "",
@@ -84,9 +86,10 @@ const ManageUsers = () => {
       setFilteredUsers(users);
     } else {
       const filtered = users.filter(user => 
-        user.username.toLowerCase().includes(term) ||
-        user.firstName.toLowerCase().includes(term) ||
-        user.lastName.toLowerCase().includes(term) ||
+        user.name.toLowerCase().includes(term) ||
+        (user.username?.toLowerCase().includes(term) || false) ||
+        (user.firstName?.toLowerCase().includes(term) || false) ||
+        (user.lastName?.toLowerCase().includes(term) || false) ||
         user.email.toLowerCase().includes(term) ||
         user.role.toLowerCase().includes(term)
       );
@@ -108,10 +111,10 @@ const ManageUsers = () => {
   // Add new user
   const handleAddUser = () => {
     // Validate input
-    if (!newUser.username || !newUser.password || !newUser.firstName || !newUser.lastName || !newUser.email) {
+    if (!newUser.name || !newUser.password || !newUser.email) {
       toast({
         title: "Error",
-        description: "Please fill in all fields",
+        description: "Please fill in all required fields",
         variant: "destructive"
       });
       return;
@@ -128,7 +131,7 @@ const ManageUsers = () => {
       .then(response => response.json())
       .then(data => {
         // Add the new user to the state with proper typing
-        const typedUser = {
+        const typedUser: User = {
           ...data,
           role: data.role as UserRole
         };
@@ -143,6 +146,7 @@ const ManageUsers = () => {
         
         setIsAddUserOpen(false);
         setNewUser({
+          name: "",
           username: "",
           password: "",
           firstName: "",
@@ -172,6 +176,7 @@ const ManageUsers = () => {
         
         setIsAddUserOpen(false);
         setNewUser({
+          name: "",
           username: "",
           password: "",
           firstName: "",
@@ -187,10 +192,11 @@ const ManageUsers = () => {
     setIsEditMode(true);
     setSelectedUser(user);
     setNewUser({
-      username: user.username,
+      name: user.name,
+      username: user.username || "",
       password: "", // We don't show or edit existing passwords
-      firstName: user.firstName,
-      lastName: user.lastName,
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
       email: user.email,
       role: user.role
     });
@@ -202,10 +208,10 @@ const ManageUsers = () => {
     if (!selectedUser) return;
 
     // Validate input
-    if (!newUser.username || !newUser.firstName || !newUser.lastName || !newUser.email) {
+    if (!newUser.name || !newUser.email) {
       toast({
         title: "Error",
-        description: "Please fill in all fields",
+        description: "Please fill in all required fields",
         variant: "destructive"
       });
       return;
@@ -326,6 +332,7 @@ const ManageUsers = () => {
                 setIsEditMode(false);
                 setSelectedUser(null);
                 setNewUser({
+                  name: "",
                   username: "",
                   password: "",
                   firstName: "",
@@ -353,6 +360,17 @@ const ManageUsers = () => {
               </DialogHeader>
               
               <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="name" className="text-right">Name</Label>
+                  <Input 
+                    id="name" 
+                    name="name"
+                    className="col-span-3" 
+                    value={newUser.name}
+                    onChange={handleInputChange}
+                  />
+                </div>
+
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="username" className="text-right">Username</Label>
                   <Input 
@@ -443,8 +461,8 @@ const ManageUsers = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Username</TableHead>
                 <TableHead>Name</TableHead>
+                <TableHead>Username</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -460,8 +478,8 @@ const ManageUsers = () => {
               ) : (
                 filteredUsers.map(user => (
                   <TableRow key={user.id}>
-                    <TableCell>{user.username}</TableCell>
                     <TableCell>{user.firstName} {user.lastName}</TableCell>
+                    <TableCell>{user.username || user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

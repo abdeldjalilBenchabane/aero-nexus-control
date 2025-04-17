@@ -7,12 +7,18 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { flights, Flight, reservations, Reservation } from "@/lib/db";
+import { flights, reservations } from "@/lib/db";
+import type { Flight, Reservation } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { BadgeAlert, Calendar, Info, Plane, Printer, Share2, Tag, Trash2, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+// Define a concrete type to handle the flight fallback scenario
+interface ReservationWithFlight extends Reservation {
+  flight: Flight;
+}
 
 const MyReservations = () => {
   const { user } = useAuth();
@@ -20,41 +26,47 @@ const MyReservations = () => {
   
   // State for modals
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
-  const [selectedReservation, setSelectedReservation] = useState<(Reservation & { flight: Flight }) | null>(null);
+  const [selectedReservation, setSelectedReservation] = useState<ReservationWithFlight | null>(null);
   
   // Get user's reservations
   const userId = user?.id || "";
-  const userReservations = reservations.filter(res => res.userId === userId);
+  const userReservations = reservations.filter(res => res.userId === userId || res.user_id === userId);
   
   // Get flight details for each reservation
-  const reservationsWithFlights = userReservations.map(reservation => {
-    const flight = flights.find(flight => flight.id === reservation.flightId);
+  const reservationsWithFlights: ReservationWithFlight[] = userReservations.map(reservation => {
+    const flight = flights.find(flight => flight.id === reservation.flightId || flight.id === reservation.flight_id);
+    
+    // If we found a real flight, use it - otherwise create a compatible fallback object
+    const flightData: Flight = flight || {
+      id: "",
+      flight_number: "Unknown",
+      flightNumber: "Unknown",
+      airline: "Unknown",
+      origin: "Unknown",
+      destination: "Unknown",
+      departure_time: new Date().toISOString(),
+      departureTime: new Date().toISOString(),
+      arrival_time: new Date().toISOString(),
+      arrivalTime: new Date().toISOString(),
+      status: "scheduled",
+      price: 0,
+      gate: "Unknown",
+      runway: "Unknown"
+    };
+    
     return {
       ...reservation,
-      flight: flight || {
-        id: "",
-        flightNumber: "Unknown",
-        airline: "Unknown",
-        origin: "Unknown",
-        destination: "Unknown",
-        departureTime: new Date().toISOString(),
-        arrivalTime: new Date().toISOString(),
-        status: "scheduled",
-        gate: null,
-        runway: null,
-        availableSeats: [],
-        bookedSeats: []
-      }
+      flight: flightData
     };
   });
   
   // Split reservations by upcoming/past
   const now = new Date();
   const upcomingReservations = reservationsWithFlights.filter(res => 
-    new Date(res.flight.departureTime) > now
+    new Date(res.flight.departureTime || res.flight.departure_time) > now
   );
   const pastReservations = reservationsWithFlights.filter(res => 
-    new Date(res.flight.departureTime) <= now
+    new Date(res.flight.departureTime || res.flight.departure_time) <= now
   );
   
   // Handle reservation cancellation
@@ -140,10 +152,10 @@ const MyReservations = () => {
                   <BadgeAlert className="h-4 w-4" />
                   <AlertTitle>Reservation Details</AlertTitle>
                   <AlertDescription className="space-y-2">
-                    <p>Flight: {selectedReservation.flight.flightNumber}</p>
+                    <p>Flight: {selectedReservation.flight.flightNumber || selectedReservation.flight.flight_number}</p>
                     <p>From: {selectedReservation.flight.origin} to {selectedReservation.flight.destination}</p>
-                    <p>Departure: {new Date(selectedReservation.flight.departureTime).toLocaleString()}</p>
-                    <p>Seat: {selectedReservation.seat}</p>
+                    <p>Departure: {new Date(selectedReservation.flight.departureTime || selectedReservation.flight.departure_time).toLocaleString()}</p>
+                    <p>Seat: {selectedReservation.seat || selectedReservation.seat_number}</p>
                   </AlertDescription>
                 </Alert>
               </div>
@@ -166,7 +178,7 @@ const MyReservations = () => {
 
 // Reservation Card Component
 interface ReservationCardProps {
-  reservation: Reservation & { flight: Flight };
+  reservation: ReservationWithFlight;
   isPast?: boolean;
   onCancel?: () => void;
   onViewDetails: () => void;
@@ -181,7 +193,7 @@ const ReservationCard = ({ reservation, isPast = false, onCancel, onViewDetails 
             <div className="flex items-center gap-2">
               <Plane className="h-5 w-5 text-primary" />
               <h3 className="text-lg font-semibold">
-                {reservation.flight.airline} - {reservation.flight.flightNumber}
+                {reservation.flight.airline} - {reservation.flight.flightNumber || reservation.flight.flight_number}
               </h3>
               <Badge className={getStatusBadgeClass(reservation.flight.status)}>
                 {reservation.flight.status.charAt(0).toUpperCase() + reservation.flight.status.slice(1)}
@@ -197,17 +209,17 @@ const ReservationCard = ({ reservation, isPast = false, onCancel, onViewDetails 
             <div className="flex flex-wrap gap-4 mt-2">
               <div className="flex items-center text-sm">
                 <Calendar className="h-4 w-4 mr-1" />
-                <span>{new Date(reservation.flight.departureTime).toLocaleString()}</span>
+                <span>{new Date(reservation.flight.departureTime || reservation.flight.departure_time).toLocaleString()}</span>
               </div>
               
               <div className="flex items-center text-sm">
                 <Tag className="h-4 w-4 mr-1" />
-                <span>Seat {reservation.seat}</span>
+                <span>Seat {reservation.seat || reservation.seat_number}</span>
               </div>
               
               <div className="flex items-center text-sm">
                 <User className="h-4 w-4 mr-1" />
-                <span>Passenger ID: {reservation.userId.slice(0, 8)}</span>
+                <span>Passenger ID: {(reservation.userId || reservation.user_id).slice(0, 8)}</span>
               </div>
             </div>
           </div>

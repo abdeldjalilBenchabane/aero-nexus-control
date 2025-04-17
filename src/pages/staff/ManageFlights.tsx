@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { PlusCircle, Pencil, Trash2, Search, MapPin, LayoutGrid } from "lucide-react";
 import PageLayout from "@/components/PageLayout";
@@ -9,11 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import FlightTable from "@/components/FlightTable";
-import { Flight, Gate, Runway } from "@/lib/db";
+import { flights, gates, runways } from "@/lib/db";
+import type { Flight, Gate, Runway } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 
-// Flight status type helper
-type FlightStatus = "scheduled" | "boarding" | "departed" | "arrived" | "delayed" | "cancelled";
+type FlightStatus = Flight["status"];
 
 const ManageFlights = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -22,12 +21,16 @@ const ManageFlights = () => {
   const [isAddFlightOpen, setIsAddFlightOpen] = useState(false);
   const [newFlight, setNewFlight] = useState({
     flightNumber: "",
+    flight_number: "",
     airline: "",
     origin: "",
     destination: "",
     departureTime: "",
+    departure_time: "",
     arrivalTime: "",
-    status: "scheduled" as FlightStatus
+    arrival_time: "",
+    status: "scheduled" as FlightStatus,
+    price: 0
   });
   const [isAssignGateOpen, setIsAssignGateOpen] = useState(false);
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
@@ -37,14 +40,10 @@ const ManageFlights = () => {
   const [availableRunways, setAvailableRunways] = useState<Runway[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Fetch flights on component mount
   useEffect(() => {
-    // In a real app, this would fetch data from the API
-    // For now, we're using the fake imported data
     fetch("http://localhost:3001/api/flights")
       .then(response => response.json())
       .then(data => {
-        // Ensure proper typing
         const typedFlights = data.map((flight: any) => ({
           ...flight,
           status: flight.status as FlightStatus
@@ -54,7 +53,6 @@ const ManageFlights = () => {
       })
       .catch(error => {
         console.error("Error fetching flights:", error);
-        // Fallback to mock data if API fails
         import("@/lib/db").then(({ flights }) => {
           setFlights(flights);
           setFilteredFlights(flights);
@@ -62,7 +60,6 @@ const ManageFlights = () => {
       });
   }, []);
 
-  // Handle search
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
@@ -71,9 +68,10 @@ const ManageFlights = () => {
       setFilteredFlights(flights);
     } else {
       const filtered = flights.filter(flight => 
-        flight.flightNumber.toLowerCase().includes(term) ||
-        flight.airline.toLowerCase().includes(term) ||
-        flight.origin.toLowerCase().includes(term) ||
+        (flight.flightNumber?.toLowerCase().includes(term) || 
+         flight.flight_number?.toLowerCase().includes(term) || false) ||
+        (flight.airline?.toLowerCase().includes(term) || false) ||
+        (flight.origin?.toLowerCase().includes(term) || false) ||
         flight.destination.toLowerCase().includes(term) ||
         flight.status.toLowerCase().includes(term)
       );
@@ -81,29 +79,34 @@ const ManageFlights = () => {
     }
   };
 
-  // Handle new flight input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setNewFlight(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handle status selection
   const handleStatusChange = (value: string) => {
-    setNewFlight(prev => ({ ...prev, status: value as FlightStatus }));
+    setNewFlight(prev => ({ 
+      ...prev, 
+      status: value as FlightStatus 
+    }));
   };
 
-  // Add new flight
   const handleAddFlight = () => {
-    // Create flight object
-    const flightData = {
-      ...newFlight,
-      id: `flight${Date.now()}`, // Generate a unique ID
+    const flightData: Flight = {
+      id: `flight${Date.now()}`,
+      flight_number: newFlight.flightNumber,
+      flightNumber: newFlight.flightNumber,
+      airline: newFlight.airline,
+      origin: newFlight.origin,
+      destination: newFlight.destination,
+      departure_time: newFlight.departureTime,
+      departureTime: newFlight.departureTime,
+      arrival_time: newFlight.arrivalTime,
+      arrivalTime: newFlight.arrivalTime,
       status: newFlight.status,
-      availableSeats: ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"],
-      bookedSeats: [] as { seatId: string; passengerId: string }[]
-    } as Flight;
+      price: newFlight.price || 0
+    };
 
-    // In a real application, this would make an API call
     fetch("http://localhost:3001/api/flights", {
       method: "POST",
       headers: {
@@ -113,7 +116,6 @@ const ManageFlights = () => {
     })
       .then(response => response.json())
       .then(data => {
-        // Add the new flight to the state with proper typing
         const typedFlight = {
           ...data,
           status: data.status as FlightStatus
@@ -123,20 +125,22 @@ const ManageFlights = () => {
         setFilteredFlights(updatedFlights);
         setIsAddFlightOpen(false);
         
-        // Reset form
         setNewFlight({
           flightNumber: "",
+          flight_number: "",
           airline: "",
           origin: "",
           destination: "",
           departureTime: "",
+          departure_time: "",
           arrivalTime: "",
-          status: "scheduled" as FlightStatus
+          arrival_time: "",
+          status: "scheduled" as FlightStatus,
+          price: 0
         });
       })
       .catch(error => {
         console.error("Error adding flight:", error);
-        // Fallback if API fails - just add to local state
         const updatedFlights = [...flights, flightData];
         setFlights(updatedFlights);
         setFilteredFlights(updatedFlights);
@@ -144,33 +148,43 @@ const ManageFlights = () => {
       });
   };
 
-  // Edit flight
   const handleEditFlight = (flight: Flight) => {
     setIsEditMode(true);
     setNewFlight({
-      flightNumber: flight.flightNumber,
-      airline: flight.airline,
-      origin: flight.origin,
+      flightNumber: flight.flightNumber || flight.flight_number,
+      flight_number: flight.flight_number || flight.flightNumber || "",
+      airline: flight.airline || "",
+      origin: flight.origin || "",
       destination: flight.destination,
-      departureTime: flight.departureTime,
-      arrivalTime: flight.arrivalTime,
-      status: flight.status
+      departureTime: flight.departureTime || flight.departure_time,
+      departure_time: flight.departure_time || flight.departureTime || "",
+      arrivalTime: flight.arrivalTime || flight.arrival_time,
+      arrival_time: flight.arrival_time || flight.arrivalTime || "",
+      status: flight.status,
+      price: flight.price
     });
     setSelectedFlight(flight);
     setIsAddFlightOpen(true);
   };
 
-  // Update flight
   const handleUpdateFlight = () => {
     if (!selectedFlight) return;
 
-    const updatedFlight = {
+    const updatedFlight: Flight = {
       ...selectedFlight,
-      ...newFlight,
-      status: newFlight.status as FlightStatus // Ensure correct typing
+      flight_number: newFlight.flightNumber,
+      flightNumber: newFlight.flightNumber,
+      airline: newFlight.airline,
+      origin: newFlight.origin,
+      destination: newFlight.destination,
+      departure_time: newFlight.departureTime,
+      departureTime: newFlight.departureTime,
+      arrival_time: newFlight.arrivalTime,
+      arrivalTime: newFlight.arrivalTime,
+      status: newFlight.status,
+      price: newFlight.price
     };
 
-    // In a real application, this would make an API call
     fetch(`http://localhost:3001/api/flights/${selectedFlight.id}`, {
       method: "PUT",
       headers: {
@@ -180,7 +194,6 @@ const ManageFlights = () => {
     })
       .then(response => response.json())
       .then(data => {
-        // Update the flight in the state with proper typing
         const typedFlight = {
           ...data,
           status: data.status as FlightStatus
@@ -196,7 +209,6 @@ const ManageFlights = () => {
       })
       .catch(error => {
         console.error("Error updating flight:", error);
-        // Fallback if API fails - just update local state
         const updatedFlights = flights.map(f => 
           f.id === selectedFlight.id ? updatedFlight : f
         );
@@ -208,51 +220,44 @@ const ManageFlights = () => {
       });
   };
 
-  // Delete flight
   const handleDeleteFlight = (flight: Flight) => {
-    // In a real application, this would make an API call
     fetch(`http://localhost:3001/api/flights/${flight.id}`, {
       method: "DELETE",
     })
       .then(() => {
-        // Remove the flight from the state
         const updatedFlights = flights.filter(f => f.id !== flight.id);
         setFlights(updatedFlights);
         setFilteredFlights(updatedFlights);
       })
       .catch(error => {
         console.error("Error deleting flight:", error);
-        // Fallback if API fails - just remove from local state
         const updatedFlights = flights.filter(f => f.id !== flight.id);
         setFlights(updatedFlights);
         setFilteredFlights(updatedFlights);
       });
   };
 
-  // Open assign gate/runway dialog
   const handleOpenAssignDialog = (flight: Flight) => {
     setSelectedFlight(flight);
     
-    // In a real app, fetch available gates and runways from API
-    // For now, use mock data
     import("@/lib/db").then(({ gates, runways }) => {
-      setAvailableGates(gates.filter(g => g.isAvailable));
-      setAvailableRunways(runways.filter(r => r.isAvailable));
+      setAvailableGates(gates.filter(g => g.isAvailable !== false));
+      setAvailableRunways(runways.filter(r => r.isAvailable !== false));
       setIsAssignGateOpen(true);
     });
   };
 
-  // Assign gate and runway
   const handleAssignGateRunway = () => {
     if (!selectedFlight) return;
 
     const updatedFlight = {
       ...selectedFlight,
       gate: selectedGate || selectedFlight.gate,
-      runway: selectedRunway || selectedFlight.runway
+      gate_id: selectedGate || selectedFlight.gate_id,
+      runway: selectedRunway || selectedFlight.runway,
+      runway_id: selectedRunway || selectedFlight.runway_id
     };
 
-    // In a real application, this would make API calls to assign gate and runway
     const promises = [];
     
     if (selectedGate) {
@@ -279,10 +284,8 @@ const ManageFlights = () => {
       );
     }
 
-    // Execute all promises
     Promise.all(promises)
       .then(() => {
-        // Update the flight in the state
         const updatedFlights = flights.map(f => 
           f.id === selectedFlight.id ? updatedFlight : f
         );
@@ -295,7 +298,6 @@ const ManageFlights = () => {
       })
       .catch(error => {
         console.error("Error assigning gate/runway:", error);
-        // Fallback if API fails - just update local state
         const updatedFlights = flights.map(f => 
           f.id === selectedFlight.id ? updatedFlight : f
         );
@@ -321,7 +323,6 @@ const ManageFlights = () => {
         </TabsList>
 
         <TabsContent value="manage" className="space-y-6">
-          {/* Search and Add Flight */}
           <div className="flex flex-col sm:flex-row justify-between gap-4">
             <div className="relative max-w-md">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -340,12 +341,16 @@ const ManageFlights = () => {
                 setSelectedFlight(null);
                 setNewFlight({
                   flightNumber: "",
+                  flight_number: "",
                   airline: "",
                   origin: "",
                   destination: "",
                   departureTime: "",
+                  departure_time: "",
                   arrivalTime: "",
-                  status: "scheduled" as FlightStatus
+                  arrival_time: "",
+                  status: "scheduled" as FlightStatus,
+                  price: 0
                 });
               }
             }}>
@@ -433,22 +438,37 @@ const ManageFlights = () => {
                       />
                     </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select value={newFlight.status} onValueChange={handleStatusChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="scheduled">Scheduled</SelectItem>
-                        <SelectItem value="boarding">Boarding</SelectItem>
-                        <SelectItem value="departed">Departed</SelectItem>
-                        <SelectItem value="arrived">Arrived</SelectItem>
-                        <SelectItem value="delayed">Delayed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="status">Status</Label>
+                      <Select value={newFlight.status} onValueChange={handleStatusChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="scheduled">Scheduled</SelectItem>
+                          <SelectItem value="boarding">Boarding</SelectItem>
+                          <SelectItem value="departed">Departed</SelectItem>
+                          <SelectItem value="arrived">Arrived</SelectItem>
+                          <SelectItem value="delayed">Delayed</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                          <SelectItem value="landed">Landed</SelectItem>
+                          <SelectItem value="in_air">In Air</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="price">Price</Label>
+                      <Input 
+                        id="price" 
+                        name="price"
+                        type="number"
+                        value={newFlight.price.toString()}
+                        onChange={handleInputChange}
+                      />
+                    </div>
                   </div>
                 </div>
                 
@@ -462,7 +482,6 @@ const ManageFlights = () => {
             </Dialog>
           </div>
           
-          {/* Flights Table */}
           <FlightTable 
             flights={filteredFlights} 
             showActions={true}
@@ -499,7 +518,7 @@ const ManageFlights = () => {
                     <SelectContent>
                       {flights.map(flight => (
                         <SelectItem key={flight.id} value={flight.id}>
-                          {flight.flightNumber} - {flight.origin} to {flight.destination}
+                          {flight.flightNumber || flight.flight_number} - {flight.origin} to {flight.destination}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -516,7 +535,7 @@ const ManageFlights = () => {
                       <SelectContent>
                         {availableGates.map(gate => (
                           <SelectItem key={gate.id} value={gate.id}>
-                            {gate.name} (Terminal {gate.terminal})
+                            {gate.name || gate.gate_number} {gate.terminal ? `(Terminal ${gate.terminal})` : ''}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -532,7 +551,7 @@ const ManageFlights = () => {
                       <SelectContent>
                         {availableRunways.map(runway => (
                           <SelectItem key={runway.id} value={runway.id}>
-                            {runway.name}
+                            {runway.name || runway.runway_number}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -545,11 +564,10 @@ const ManageFlights = () => {
             </CardContent>
           </Card>
 
-          {/* Display current assignments */}
           <div className="space-y-2">
             <h3 className="text-lg font-medium">Current Assignments</h3>
             <FlightTable 
-              flights={flights.filter(f => f.gate || f.runway)}
+              flights={flights.filter(f => f.gate || f.runway || f.gate_id || f.runway_id)}
               searchable={true}
               filterable={true}
             />
@@ -557,14 +575,13 @@ const ManageFlights = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Assign Gate/Runway Dialog */}
       <Dialog open={isAssignGateOpen} onOpenChange={setIsAssignGateOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Assign Gate & Runway</DialogTitle>
             <DialogDescription>
               {selectedFlight && (
-                <span>Flight {selectedFlight.flightNumber} ({selectedFlight.origin} → {selectedFlight.destination})</span>
+                <span>Flight {selectedFlight.flightNumber || selectedFlight.flight_number} ({selectedFlight.origin} → {selectedFlight.destination})</span>
               )}
             </DialogDescription>
           </DialogHeader>
@@ -574,12 +591,12 @@ const ManageFlights = () => {
               <Label htmlFor="gateSelect">Gate</Label>
               <Select value={selectedGate} onValueChange={setSelectedGate}>
                 <SelectTrigger id="gateSelect">
-                  <SelectValue placeholder={selectedFlight?.gate || "Select gate"} />
+                  <SelectValue placeholder={(selectedFlight?.gate || selectedFlight?.gate_id) || "Select gate"} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableGates.map(gate => (
                     <SelectItem key={gate.id} value={gate.id}>
-                      {gate.name} (Terminal {gate.terminal})
+                      {gate.name || gate.gate_number} {gate.terminal ? `(Terminal ${gate.terminal})` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -590,12 +607,12 @@ const ManageFlights = () => {
               <Label htmlFor="runwaySelect">Runway</Label>
               <Select value={selectedRunway} onValueChange={setSelectedRunway}>
                 <SelectTrigger id="runwaySelect">
-                  <SelectValue placeholder={selectedFlight?.runway || "Select runway"} />
+                  <SelectValue placeholder={(selectedFlight?.runway || selectedFlight?.runway_id) || "Select runway"} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableRunways.map(runway => (
                     <SelectItem key={runway.id} value={runway.id}>
-                      {runway.name}
+                      {runway.name || runway.runway_number}
                     </SelectItem>
                   ))}
                 </SelectContent>

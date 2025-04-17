@@ -9,6 +9,7 @@ export interface User {
   firstName?: string;
   lastName?: string;
   airlineId?: string;
+  username?: string; // Added to support ManageUsers.tsx
 }
 
 export interface AirlineProfile {
@@ -55,7 +56,7 @@ export interface Flight {
   gate?: string; // For backward compatibility
   runway?: string; // For backward compatibility
   availableSeats?: string[]; // For backward compatibility
-  bookedSeats?: Array<{seatId: string}>; // For backward compatibility
+  bookedSeats?: Array<{seatId: string; passengerId?: string}>; // For backward compatibility
 }
 
 export interface Seat {
