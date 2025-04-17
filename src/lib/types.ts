@@ -33,7 +33,7 @@ export interface Runway {
 export interface Flight {
   id: string;
   flight_number: string;
-  airline_id: string;
+  airline_id: string;  // Ensure this property exists
   airline?: string; // For backward compatibility
   airline_name?: string; // Joined field
   gate_id?: string;
