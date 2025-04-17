@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { User, Flight, Notification } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,7 +29,8 @@ const NotificationForm = ({
   allowTargetRole = false, 
   onSuccess,
   allowedTargets,
-  flightFilter
+  flightFilter,
+  onSendNotification
 }: NotificationFormProps) => {
   const { user } = useAuth();
   const [targetType, setTargetType] = useState<"all" | "role" | "flight">("all");
@@ -43,12 +45,17 @@ const NotificationForm = ({
     // Filter flights based on user role
     if (user?.role === "airline" && user.airlineId) {
       // Airline users can only see their flights
-      const airlineFlights = flights.filter(f => f.airline_id === user.airlineId || f.airline === user.airlineId);
-      setAvailableFlights(airlineFlights);
+      const airlineFlights = flights.filter(f => 
+        f.airline_id === user.airlineId || f.airline === user.airlineId
+      );
+      // Type conversion to match the Flight interface from types.ts
+      setAvailableFlights(airlineFlights as unknown as Flight[]);
     } else {
       // Admin and staff can see all flights
       if (flightFilter) {
-        const filteredFlights = flights.filter(flight => flightFilter(flight as unknown as Flight));
+        const filteredFlights = flights.filter(flight => 
+          flightFilter(flight as unknown as Flight)
+        );
         setAvailableFlights(filteredFlights as unknown as Flight[]);
       } else {
         setAvailableFlights(flights as unknown as Flight[]);
