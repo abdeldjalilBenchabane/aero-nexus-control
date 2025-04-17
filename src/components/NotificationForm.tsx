@@ -46,19 +46,20 @@ const NotificationForm = ({
     if (user?.role === "airline" && user.airlineId) {
       // Airline users can only see their flights
       const airlineFlights = flights.filter(f => 
-        (f.airline_id && f.airline_id === user.airlineId) || (f.airline && f.airline === user.airlineId)
+        (f.airline_id && f.airline_id === user.airlineId) || 
+        (f.airline && f.airline === user.airlineId)
       );
       // Type conversion to match the Flight interface from types.ts
-      setAvailableFlights(airlineFlights as unknown as Flight[]);
+      setAvailableFlights(airlineFlights);
     } else {
       // Admin and staff can see all flights
       if (flightFilter) {
         const filteredFlights = flights.filter(flight => 
-          flightFilter(flight as unknown as Flight)
+          flightFilter(flight)
         );
-        setAvailableFlights(filteredFlights as unknown as Flight[]);
+        setAvailableFlights(filteredFlights);
       } else {
-        setAvailableFlights(flights as unknown as Flight[]);
+        setAvailableFlights(flights);
       }
     }
   }, [user, flightFilter]);
