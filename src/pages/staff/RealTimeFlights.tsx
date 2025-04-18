@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import PageLayout from "@/components/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -145,6 +146,22 @@ const RealTimeFlights = () => {
       case "delayed": return "destructive";
       case "cancelled": return "destructive";
       default: return "outline";
+    }
+  };
+
+  // Format date helper function
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "—";
+    
+    try {
+      return new Date(dateString).toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return "—";
     }
   };
 
@@ -303,18 +320,11 @@ const RealTimeFlights = () => {
                       ) : (
                         filteredFlights.map((flight) => (
                           <TableRow key={flight.id}>
-                            <TableCell className="font-medium">{flight.flight_number}</TableCell>
-                            <TableCell>{flight.airline_name}</TableCell>
-                            <TableCell>{flight.origin}</TableCell>
-                            <TableCell>{flight.destination}</TableCell>
-                            <TableCell>
-                              {new Date(flight.departure_time).toLocaleString([], {
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </TableCell>
+                            <TableCell className="font-medium">{flight.flight_number || "—"}</TableCell>
+                            <TableCell>{flight.airline_name || "—"}</TableCell>
+                            <TableCell>{flight.origin || "—"}</TableCell>
+                            <TableCell>{flight.destination || "—"}</TableCell>
+                            <TableCell>{formatDate(flight.departure_time)}</TableCell>
                             <TableCell>{flight.gate_number || "—"}</TableCell>
                             <TableCell>
                               <Badge variant={getStatusBadgeVariant(flight.status)} className="capitalize">

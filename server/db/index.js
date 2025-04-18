@@ -30,9 +30,9 @@ const userOperations = {
     const { name, email, password, role, airline_id } = user;
     const result = await query(
       'INSERT INTO users (name, email, password, role, airline_id) VALUES (?, ?, ?, ?, ?)',
-      [name, email, password, role, airline_id || null]
+      [name || 'New User', email, password, role, airline_id || null]
     );
-    return { id: result.insertId, ...user };
+    return { id: result.insertId, ...user, created_at: new Date().toISOString() };
   },
   update: async (id, userData) => {
     let sql = 'UPDATE users SET ';
@@ -41,7 +41,7 @@ const userOperations = {
     
     if (userData.name !== undefined) {
       updateFields.push('name = ?');
-      params.push(userData.name);
+      params.push(userData.name || 'Updated User');
     }
     
     if (userData.email !== undefined) {
@@ -119,7 +119,7 @@ const airplaneOperations = {
     const { name, airline_id, capacity } = airplane;
     const result = await query(
       'INSERT INTO airplanes (name, airline_id, capacity) VALUES (?, ?, ?)',
-      [name, airline_id, capacity]
+      [name || 'New Airplane', airline_id, capacity || 50]
     );
     
     const airplaneId = result.insertId;
@@ -151,7 +151,9 @@ const airplaneOperations = {
       );
     }
     
-    return { id: airplaneId, ...airplane };
+    // Get the created airplane with all fields
+    const createdAirplane = await query('SELECT * FROM airplanes WHERE id = ?', [airplaneId]);
+    return createdAirplane[0] || { id: airplaneId, ...airplane, created_at: new Date().toISOString() };
   },
   delete: async (id) => {
     // First delete related seats
@@ -166,7 +168,7 @@ const airplaneOperations = {
 const flightOperations = {
   getAll: async () => {
     return await query(`
-      SELECT f.*, a.name as airline_name, g.gate_number, r.runway_number 
+      SELECT f.*, a.name as airline_name, g.name as gate_number, r.name as runway_number 
       FROM flights f 
       LEFT JOIN airlines a ON f.airline_id = a.id
       LEFT JOIN gates g ON f.gate_id = g.id
@@ -175,7 +177,7 @@ const flightOperations = {
   },
   getById: async (id) => {
     const flights = await query(`
-      SELECT f.*, a.name as airline_name, g.gate_number, r.runway_number 
+      SELECT f.*, a.name as airline_name, g.name as gate_number, r.name as runway_number 
       FROM flights f 
       LEFT JOIN airlines a ON f.airline_id = a.id
       LEFT JOIN gates g ON f.gate_id = g.id
@@ -186,7 +188,7 @@ const flightOperations = {
   },
   getByAirline: async (airlineId) => {
     return await query(`
-      SELECT f.*, a.name as airline_name, g.gate_number, r.runway_number 
+      SELECT f.*, a.name as airline_name, g.name as gate_number, r.name as runway_number 
       FROM flights f 
       LEFT JOIN airlines a ON f.airline_id = a.id
       LEFT JOIN gates g ON f.gate_id = g.id
@@ -196,7 +198,7 @@ const flightOperations = {
   },
   search: async (criteria) => {
     let sql = `
-      SELECT f.*, a.name as airline_name, g.gate_number, r.runway_number 
+      SELECT f.*, a.name as airline_name, g.name as gate_number, r.name as runway_number 
       FROM flights f 
       LEFT JOIN airlines a ON f.airline_id = a.id
       LEFT JOIN gates g ON f.gate_id = g.id
@@ -243,10 +245,20 @@ const flightOperations = {
          departure_time, arrival_time, status, price) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [flight_number, airline_id, airplane_id, gate_id, runway_id, origin, destination, 
-       departure_time, arrival_time, status, price]
+       departure_time, arrival_time, status || 'scheduled', price]
     );
     
-    return { id: result.insertId, ...flight };
+    // Get the created flight with all fields
+    const createdFlight = await query(`
+      SELECT f.*, a.name as airline_name, g.name as gate_number, r.name as runway_number 
+      FROM flights f 
+      LEFT JOIN airlines a ON f.airline_id = a.id
+      LEFT JOIN gates g ON f.gate_id = g.id
+      LEFT JOIN runways r ON f.runway_id = r.id
+      WHERE f.id = ?
+    `, [result.insertId]);
+    
+    return createdFlight[0] || { id: result.insertId, ...flight, created_at: new Date().toISOString() };
   },
   update: async (id, flight) => {
     let sql = 'UPDATE flights SET ';
@@ -349,22 +361,24 @@ const gateOperations = {
     `, [arrivalTime, departureTime, departureTime, arrivalTime]);
   },
   create: async (gate) => {
-    const { gate_number, name, terminal } = gate;
+    const { name, terminal } = gate;
+    if (!name) {
+      throw new Error('Gate name is required');
+    }
+    
     const result = await query(
-      'INSERT INTO gates (gate_number, name, terminal) VALUES (?, ?, ?)',
-      [gate_number, name || gate_number, terminal]
+      'INSERT INTO gates (name, terminal) VALUES (?, ?)',
+      [name, terminal || null]
     );
-    return { id: result.insertId, ...gate };
+    
+    // Get the created gate with all fields
+    const createdGate = await query('SELECT * FROM gates WHERE id = ?', [result.insertId]);
+    return createdGate[0] || { id: result.insertId, ...gate, created_at: new Date().toISOString() };
   },
   update: async (id, gate) => {
     let sql = 'UPDATE gates SET ';
     const params = [];
     const updateFields = [];
-    
-    if (gate.gate_number !== undefined) {
-      updateFields.push('gate_number = ?');
-      params.push(gate.gate_number);
-    }
     
     if (gate.name !== undefined) {
       updateFields.push('name = ?');
@@ -387,6 +401,12 @@ const gateOperations = {
     return await gateOperations.getById(id);
   },
   delete: async (id) => {
+    // Check if gate is in use by any flights
+    const flightsUsingGate = await query('SELECT COUNT(*) as count FROM flights WHERE gate_id = ?', [id]);
+    if (flightsUsingGate[0].count > 0) {
+      throw new Error('Cannot delete gate that is in use by flights');
+    }
+    
     await query('DELETE FROM gates WHERE id = ?', [id]);
     return { success: true };
   }
@@ -417,39 +437,35 @@ const runwayOperations = {
     `, [arrivalTime, departureTime, departureTime, arrivalTime]);
   },
   create: async (runway) => {
-    const { runway_number, name } = runway;
+    const { name } = runway;
+    if (!name) {
+      throw new Error('Runway name is required');
+    }
+    
     const result = await query(
-      'INSERT INTO runways (runway_number, name) VALUES (?, ?)',
-      [runway_number, name || runway_number]
+      'INSERT INTO runways (name) VALUES (?)',
+      [name]
     );
-    return { id: result.insertId, ...runway };
+    
+    // Get the created runway with all fields
+    const createdRunway = await query('SELECT * FROM runways WHERE id = ?', [result.insertId]);
+    return createdRunway[0] || { id: result.insertId, ...runway, created_at: new Date().toISOString() };
   },
   update: async (id, runway) => {
-    let sql = 'UPDATE runways SET ';
-    const params = [];
-    const updateFields = [];
-    
-    if (runway.runway_number !== undefined) {
-      updateFields.push('runway_number = ?');
-      params.push(runway.runway_number);
+    if (!runway.name) {
+      throw new Error('Runway name is required');
     }
     
-    if (runway.name !== undefined) {
-      updateFields.push('name = ?');
-      params.push(runway.name);
-    }
-    
-    if (updateFields.length === 0) {
-      return null;
-    }
-    
-    sql += updateFields.join(', ') + ' WHERE id = ?';
-    params.push(id);
-    
-    await query(sql, params);
+    await query('UPDATE runways SET name = ? WHERE id = ?', [runway.name, id]);
     return await runwayOperations.getById(id);
   },
   delete: async (id) => {
+    // Check if runway is in use by any flights
+    const flightsUsingRunway = await query('SELECT COUNT(*) as count FROM flights WHERE runway_id = ?', [id]);
+    if (flightsUsingRunway[0].count > 0) {
+      throw new Error('Cannot delete runway that is in use by flights');
+    }
+    
     await query('DELETE FROM runways WHERE id = ?', [id]);
     return { success: true };
   }
@@ -459,28 +475,31 @@ const runwayOperations = {
 const reservationOperations = {
   getAll: async () => {
     return await query(`
-      SELECT r.*, f.flight_number, f.destination, f.departure_time, f.arrival_time, s.seat_number 
+      SELECT r.*, f.flight_number, f.origin, f.destination, f.departure_time, f.arrival_time, s.seat_number, u.name as passengerName, u.email as passengerEmail 
       FROM reservations r
       JOIN flights f ON r.flight_id = f.id
       JOIN seats s ON r.seat_id = s.id
+      JOIN users u ON r.user_id = u.id
     `);
   },
   getById: async (id) => {
     const reservations = await query(`
-      SELECT r.*, f.flight_number, f.destination, f.departure_time, f.arrival_time, s.seat_number 
+      SELECT r.*, f.flight_number, f.origin, f.destination, f.departure_time, f.arrival_time, s.seat_number, u.name as passengerName, u.email as passengerEmail 
       FROM reservations r
       JOIN flights f ON r.flight_id = f.id
       JOIN seats s ON r.seat_id = s.id
+      JOIN users u ON r.user_id = u.id
       WHERE r.id = ?
     `, [id]);
     return reservations[0] || null;
   },
   getByUser: async (userId) => {
     return await query(`
-      SELECT r.*, f.flight_number, f.destination, f.departure_time, f.arrival_time, s.seat_number 
+      SELECT r.*, f.flight_number, f.origin, f.destination, f.departure_time, f.arrival_time, s.seat_number, u.name as passengerName, u.email as passengerEmail
       FROM reservations r
       JOIN flights f ON r.flight_id = f.id
       JOIN seats s ON r.seat_id = s.id
+      JOIN users u ON r.user_id = u.id
       WHERE r.user_id = ?
     `, [userId]);
   },
@@ -496,7 +515,7 @@ const reservationOperations = {
       [user_id, flight_id, seat_id, 'confirmed']
     );
     
-    return { id: result.insertId, ...reservation };
+    return { id: result.insertId, ...reservation, created_at: new Date().toISOString() };
   },
   cancel: async (id) => {
     // Get reservation details first
@@ -567,7 +586,7 @@ const notificationOperations = {
       'INSERT INTO notifications (title, message, user_id, target_role, flight_id, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
       [title, message, user_id, target_role, flight_id]
     );
-    return { id: result.insertId, ...notification };
+    return { id: result.insertId, ...notification, created_at: new Date().toISOString() };
   }
 };
 

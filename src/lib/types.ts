@@ -1,14 +1,14 @@
 
 export interface User {
   id: string;
-  name?: string; // Added optional
-  firstName?: string; // Added optional
-  lastName?: string; // Added optional
-  username?: string; // Added optional
+  name: string; // Required now
+  firstName?: string;
+  lastName?: string;
+  username?: string;
   email: string;
   password?: string;
   role: "admin" | "staff" | "passenger" | "airline";
-  created_at?: string;
+  created_at: string; // Required now
   airline_id?: string;
   // For backward compatibility
   airlineId?: string;
@@ -18,7 +18,7 @@ export interface Airline {
   id: string;
   name: string;
   email: string;
-  created_at?: string;
+  created_at: string; // Required now
 }
 
 export interface Airplane {
@@ -26,31 +26,31 @@ export interface Airplane {
   name: string;
   airline_id: string;
   capacity: number;
-  created_at?: string;
+  created_at: string; // Required now
   // For backward compatibility
   airlineId?: string;
-  airlineName?: string; // Added for display purposes
+  airlineName?: string;
 }
 
 export interface Gate {
   id: string;
   name: string;
   terminal?: string;
-  created_at?: string;
+  created_at: string; // Required now
   // For backward compatibility
   gate_number?: string;
   isAvailable?: boolean;
-  scheduledFlights?: number | any[]; // Updated to accept array of scheduled flights
+  scheduledFlights?: number | any[];
 }
 
 export interface Runway {
   id: string;
   name: string;
-  created_at?: string;
+  created_at: string; // Required now
   // For backward compatibility
   runway_number?: string;
   isAvailable?: boolean;
-  scheduledUse?: any[]; // Added for scheduled use
+  scheduledUse?: any[];
 }
 
 export interface Seat {
@@ -86,7 +86,7 @@ export interface Flight {
   arrival_time: string;
   status: FlightStatus;
   price: number;
-  created_at?: string;
+  created_at: string; // Required now
   // For backward compatibility
   flightNumber?: string;
   airline?: string;
@@ -107,22 +107,22 @@ export interface Reservation {
   seat_id?: string;
   status?: "confirmed" | "cancelled" | "checked-in";
   reservation_time?: string;
-  created_at?: string;
+  created_at: string; // Required now
   // Joined fields
   flight_number?: string;
   destination?: string;
   departure_time?: string;
   arrival_time?: string;
-  origin?: string; // Added missing field
+  origin?: string;
   // For backward compatibility
   userId?: string;
   flightId?: string;
   seat?: string;
   seatId?: string;
   timestamp?: string;
-  flightStatus?: string; // Added for frontend display
-  passengerName?: string; // Added for staff views
-  passengerEmail?: string; // Added for staff views
+  flightStatus?: string;
+  passengerName?: string;
+  passengerEmail?: string;
 }
 
 export interface Notification {
@@ -133,7 +133,7 @@ export interface Notification {
   user_role?: "admin" | "staff" | "airline";
   target_role?: "admin" | "staff" | "passenger" | "airline" | "all";
   flight_id?: string;
-  created_at: string;
+  created_at: string; // Required now
   // For backward compatibility
   sender?: { 
     id: string;
@@ -144,8 +144,8 @@ export interface Notification {
   targetId?: string;
   timestamp?: string;
   flightId?: string;
-  flightNumber?: string; // Added for better display
-  isRead?: boolean; // Added for tracking read status
+  flightNumber?: string;
+  isRead?: boolean;
 }
 
 // Auth response types

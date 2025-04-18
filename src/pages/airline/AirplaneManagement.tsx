@@ -247,7 +247,7 @@ const AirplaneManagement = () => {
                 airplanes.map(airplane => (
                   <TableRow key={airplane.id}>
                     <TableCell>{airplane.id}</TableCell>
-                    <TableCell>{airplane.name}</TableCell>
+                    <TableCell>{airplane.name || "—"}</TableCell>
                     <TableCell>{airplane.capacity} seats</TableCell>
                     <TableCell>{formatDate(airplane.created_at)}</TableCell>
                     <TableCell className="text-right">
