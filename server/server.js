@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -51,17 +50,21 @@ apiRouter.post('/auth/login', async (req, res) => {
     
     const user = users[0];
     
-    // In a real app, we would generate a JWT token here
+    // Format user name properly
+    const firstName = user.name ? user.name.split(' ')[0] : '';
+    const lastName = user.name ? user.name.split(' ')[1] || '' : '';
+    
     return res.json({ 
       success: true, 
       user: {
-        id: user.id,
+        id: user.id.toString(),
         username: user.email,
-        firstName: user.name.split(' ')[0],
-        lastName: user.name.split(' ')[1] || '',
+        firstName: firstName,
+        lastName: lastName,
         email: user.email,
         role: user.role,
-        airlineId: user.role === 'airline' ? user.id : undefined
+        airlineId: user.airline_id ? user.airline_id.toString() : undefined,
+        created_at: user.created_at
       },
       token: 'mock-jwt-token'
     });
@@ -76,16 +79,24 @@ apiRouter.get('/users', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM users');
     
-    const users = rows.map(user => ({
-      id: user.id.toString(),
-      username: user.email,
-      firstName: user.name.split(' ')[0],
-      lastName: user.name.split(' ')[1] || '',
-      email: user.email,
-      role: user.role,
-      airlineId: user.role === 'airline' ? user.id : undefined,
-      password: user.password // In a real app, we would never return passwords
-    }));
+    const users = rows.map(user => {
+      // Properly handle name splitting
+      const nameParts = user.name ? user.name.split(' ') : ['', ''];
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+      
+      return {
+        id: user.id.toString(),
+        username: user.email,
+        firstName: firstName,
+        lastName: lastName,
+        email: user.email,
+        role: user.role,
+        airlineId: user.airline_id ? user.airline_id.toString() : undefined,
+        password: user.password, // In a real app, we would never return passwords
+        created_at: user.created_at ? new Date(user.created_at).toISOString() : null
+      };
+    });
     
     res.json(users);
   } catch (error) {
@@ -104,15 +115,21 @@ apiRouter.get('/users/:id', async (req, res) => {
     
     const user = rows[0];
     
+    // Properly handle name splitting
+    const nameParts = user.name ? user.name.split(' ') : ['', ''];
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+    
     res.json({
       id: user.id.toString(),
       username: user.email,
-      firstName: user.name.split(' ')[0],
-      lastName: user.name.split(' ')[1] || '',
+      firstName: firstName,
+      lastName: lastName,
       email: user.email,
       role: user.role,
-      airlineId: user.role === 'airline' ? user.id : undefined,
-      password: user.password
+      airlineId: user.airline_id ? user.airline_id.toString() : undefined,
+      password: user.password,
+      created_at: user.created_at ? new Date(user.created_at).toISOString() : null
     });
   } catch (error) {
     console.error('Error fetching user:', error);
@@ -122,25 +139,41 @@ apiRouter.get('/users/:id', async (req, res) => {
 
 apiRouter.post('/users', async (req, res) => {
   try {
-    const { firstName, lastName, email, password, role } = req.body;
-    const name = `${firstName} ${lastName}`;
+    const { firstName, lastName, email, password, role, airlineId } = req.body;
+    const name = `${firstName || ''} ${lastName || ''}`.trim();
     
+    // Check if email already exists
+    const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
+    if (existing.length > 0) {
+      return res.status(400).json({ success: false, message: 'Email already in use' });
+    }
+    
+    // Insert the new user
     const [result] = await pool.query(
-      'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
-      [name, email, password, role]
+      'INSERT INTO users (name, email, password, role, airline_id) VALUES (?, ?, ?, ?, ?)',
+      [name, email, password, role, airlineId || null]
     );
     
-    const newUser = {
-      id: result.insertId.toString(),
-      username: email,
-      firstName,
-      lastName,
-      email,
-      password,
-      role
-    };
+    // Get the created user with all fields
+    const [newUserRows] = await pool.query('SELECT * FROM users WHERE id = ?', [result.insertId]);
     
-    res.status(201).json(newUser);
+    if (newUserRows.length === 0) {
+      return res.status(500).json({ success: false, message: 'Failed to retrieve created user' });
+    }
+    
+    const newUser = newUserRows[0];
+    
+    res.status(201).json({
+      id: newUser.id.toString(),
+      username: email,
+      firstName: firstName || '',
+      lastName: lastName || '',
+      email: email,
+      password: password,
+      role: role,
+      airlineId: airlineId ? airlineId.toString() : undefined,
+      created_at: newUser.created_at ? new Date(newUser.created_at).toISOString() : null
+    });
   } catch (error) {
     console.error('Error creating user:', error);
     res.status(500).json({ success: false, message: 'Server error' });
@@ -149,29 +182,53 @@ apiRouter.post('/users', async (req, res) => {
 
 apiRouter.put('/users/:id', async (req, res) => {
   try {
-    const { firstName, lastName, email, password, role } = req.body;
-    const name = `${firstName} ${lastName}`;
+    const { firstName, lastName, email, password, role, airlineId } = req.body;
+    const name = `${firstName || ''} ${lastName || ''}`.trim();
     
-    const [result] = await pool.query(
-      'UPDATE users SET name = ?, email = ?, password = ?, role = ? WHERE id = ?',
-      [name, email, password, role, req.params.id]
-    );
+    // Update user data
+    const params = [name, email, password, role];
+    let query = 'UPDATE users SET name = ?, email = ?, password = ?, role = ?';
+    
+    // Handle airline_id separately (it can be null)
+    if (airlineId !== undefined) {
+      query += ', airline_id = ?';
+      params.push(airlineId === null ? null : airlineId);
+    }
+    
+    query += ' WHERE id = ?';
+    params.push(req.params.id);
+    
+    const [result] = await pool.query(query, params);
     
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
     
-    const updatedUser = {
-      id: req.params.id,
-      username: email,
-      firstName,
-      lastName,
-      email,
-      password,
-      role
-    };
+    // Get the updated user
+    const [updatedUserRows] = await pool.query('SELECT * FROM users WHERE id = ?', [req.params.id]);
     
-    res.json(updatedUser);
+    if (updatedUserRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found after update' });
+    }
+    
+    const updatedUser = updatedUserRows[0];
+    
+    // Properly handle name splitting
+    const nameParts = updatedUser.name ? updatedUser.name.split(' ') : ['', ''];
+    const updatedFirstName = nameParts[0] || '';
+    const updatedLastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+    
+    res.json({
+      id: updatedUser.id.toString(),
+      username: updatedUser.email,
+      firstName: updatedFirstName,
+      lastName: updatedLastName,
+      email: updatedUser.email,
+      password: updatedUser.password,
+      role: updatedUser.role,
+      airlineId: updatedUser.airline_id ? updatedUser.airline_id.toString() : undefined,
+      created_at: updatedUser.created_at ? new Date(updatedUser.created_at).toISOString() : null
+    });
   } catch (error) {
     console.error('Error updating user:', error);
     res.status(500).json({ success: false, message: 'Server error' });
@@ -193,55 +250,447 @@ apiRouter.delete('/users/:id', async (req, res) => {
   }
 });
 
+// Gates
+apiRouter.get('/gates', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM gates');
+    
+    const gates = rows.map(gate => ({
+      id: gate.id.toString(),
+      name: gate.name,
+      gate_number: gate.name, // For backward compatibility
+      terminal: gate.terminal || 'Main Terminal',
+      isAvailable: true, // Default to true, will be updated based on flight schedules
+      scheduledFlights: [], // Will be populated from flights table
+      created_at: gate.created_at ? new Date(gate.created_at).toISOString() : null
+    }));
+    
+    // Get scheduled flights for each gate
+    for (const gate of gates) {
+      const [flights] = await pool.query(`
+        SELECT id, departure_time, arrival_time 
+        FROM flights 
+        WHERE gate_id = ?
+      `, [gate.id]);
+      
+      if (flights.length > 0) {
+        gate.isAvailable = false;
+        gate.scheduledFlights = flights.map(flight => ({
+          flightId: flight.id.toString(),
+          from: flight.departure_time,
+          to: flight.arrival_time
+        }));
+      }
+    }
+    
+    res.json(gates);
+  } catch (error) {
+    console.error('Error fetching gates:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+apiRouter.post('/gates', async (req, res) => {
+  try {
+    const { name, terminal } = req.body;
+    
+    const [result] = await pool.query(
+      'INSERT INTO gates (name, terminal) VALUES (?, ?)',
+      [name, terminal]
+    );
+    
+    const newGate = {
+      id: result.insertId.toString(),
+      name: name,
+      gate_number: name, // For backward compatibility
+      terminal: terminal || 'Main Terminal',
+      isAvailable: true,
+      scheduledFlights: [],
+      created_at: new Date().toISOString()
+    };
+    
+    res.status(201).json(newGate);
+  } catch (error) {
+    console.error('Error creating gate:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+apiRouter.put('/gates/:id', async (req, res) => {
+  try {
+    const { name, terminal } = req.body;
+    
+    const [result] = await pool.query(
+      'UPDATE gates SET name = ?, terminal = ? WHERE id = ?',
+      [name, terminal, req.params.id]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'Gate not found' });
+    }
+    
+    const [updatedGate] = await pool.query('SELECT * FROM gates WHERE id = ?', [req.params.id]);
+    
+    if (updatedGate.length === 0) {
+      return res.status(404).json({ success: false, message: 'Gate not found after update' });
+    }
+    
+    const gate = updatedGate[0];
+    
+    res.json({
+      id: gate.id.toString(),
+      name: gate.name,
+      gate_number: gate.name, // For backward compatibility
+      terminal: gate.terminal || 'Main Terminal',
+      isAvailable: true,
+      scheduledFlights: [],
+      created_at: gate.created_at ? new Date(gate.created_at).toISOString() : null
+    });
+  } catch (error) {
+    console.error('Error updating gate:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+apiRouter.delete('/gates/:id', async (req, res) => {
+  try {
+    // Check if gate is used in any flights
+    const [flights] = await pool.query('SELECT id FROM flights WHERE gate_id = ?', [req.params.id]);
+    
+    if (flights.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Cannot delete gate because it is assigned to flights' 
+      });
+    }
+    
+    const [result] = await pool.query('DELETE FROM gates WHERE id = ?', [req.params.id]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'Gate not found' });
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting gate:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Runways
+apiRouter.get('/runways', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM runways');
+    
+    const runways = rows.map(runway => ({
+      id: runway.id.toString(),
+      name: runway.name,
+      runway_number: runway.name, // For backward compatibility
+      isAvailable: true, // Default to true, will be updated based on flight schedules
+      scheduledUse: [], // Will be populated from flights table
+      created_at: runway.created_at ? new Date(runway.created_at).toISOString() : null
+    }));
+    
+    // Get scheduled flights for each runway
+    for (const runway of runways) {
+      const [flights] = await pool.query(`
+        SELECT id, departure_time 
+        FROM flights 
+        WHERE runway_id = ?
+      `, [runway.id]);
+      
+      if (flights.length > 0) {
+        runway.isAvailable = false;
+        runway.scheduledUse = flights.map(flight => {
+          const departureTime = new Date(flight.departure_time);
+          const thirtyMinutesBefore = new Date(departureTime);
+          thirtyMinutesBefore.setMinutes(departureTime.getMinutes() - 30);
+          
+          const thirtyMinutesAfter = new Date(departureTime);
+          thirtyMinutesAfter.setMinutes(departureTime.getMinutes() + 30);
+          
+          return {
+            flightId: flight.id.toString(),
+            from: thirtyMinutesBefore.toISOString(),
+            to: thirtyMinutesAfter.toISOString()
+          };
+        });
+      }
+    }
+    
+    res.json(runways);
+  } catch (error) {
+    console.error('Error fetching runways:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+apiRouter.post('/runways', async (req, res) => {
+  try {
+    const { name } = req.body;
+    
+    const [result] = await pool.query(
+      'INSERT INTO runways (name) VALUES (?)',
+      [name]
+    );
+    
+    const newRunway = {
+      id: result.insertId.toString(),
+      name: name,
+      runway_number: name, // For backward compatibility
+      isAvailable: true,
+      scheduledUse: [],
+      created_at: new Date().toISOString()
+    };
+    
+    res.status(201).json(newRunway);
+  } catch (error) {
+    console.error('Error creating runway:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+apiRouter.put('/runways/:id', async (req, res) => {
+  try {
+    const { name } = req.body;
+    
+    const [result] = await pool.query(
+      'UPDATE runways SET name = ? WHERE id = ?',
+      [name, req.params.id]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'Runway not found' });
+    }
+    
+    const [updatedRunway] = await pool.query('SELECT * FROM runways WHERE id = ?', [req.params.id]);
+    
+    if (updatedRunway.length === 0) {
+      return res.status(404).json({ success: false, message: 'Runway not found after update' });
+    }
+    
+    const runway = updatedRunway[0];
+    
+    res.json({
+      id: runway.id.toString(),
+      name: runway.name,
+      runway_number: runway.name, // For backward compatibility
+      isAvailable: true,
+      scheduledUse: [],
+      created_at: runway.created_at ? new Date(runway.created_at).toISOString() : null
+    });
+  } catch (error) {
+    console.error('Error updating runway:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+apiRouter.delete('/runways/:id', async (req, res) => {
+  try {
+    // Check if runway is used in any flights
+    const [flights] = await pool.query('SELECT id FROM flights WHERE runway_id = ?', [req.params.id]);
+    
+    if (flights.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Cannot delete runway because it is assigned to flights' 
+      });
+    }
+    
+    const [result] = await pool.query('DELETE FROM runways WHERE id = ?', [req.params.id]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'Runway not found' });
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting runway:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Airplanes
+apiRouter.get('/airlines', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM airlines');
+    
+    const airlines = rows.map(airline => ({
+      id: airline.id.toString(),
+      name: airline.name,
+      email: airline.email,
+      created_at: airline.created_at ? new Date(airline.created_at).toISOString() : null
+    }));
+    
+    res.json(airlines);
+  } catch (error) {
+    console.error('Error fetching airlines:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+apiRouter.get('/airplanes', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT a.*, al.name as airline_name 
+      FROM airplanes a
+      JOIN airlines al ON a.airline_id = al.id
+    `);
+    
+    const airplanes = rows.map(airplane => ({
+      id: airplane.id.toString(),
+      name: airplane.name,
+      airline_id: airplane.airline_id.toString(),
+      airlineId: airplane.airline_id.toString(), // For backward compatibility
+      airlineName: airplane.airline_name,
+      capacity: airplane.capacity,
+      created_at: airplane.created_at ? new Date(airplane.created_at).toISOString() : null
+    }));
+    
+    res.json(airplanes);
+  } catch (error) {
+    console.error('Error fetching airplanes:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+apiRouter.post('/airplanes', async (req, res) => {
+  try {
+    const { name, airline_id, capacity } = req.body;
+    
+    // Verify airline exists
+    const [airlines] = await pool.query('SELECT id FROM airlines WHERE id = ?', [airline_id]);
+    
+    if (airlines.length === 0) {
+      return res.status(400).json({ success: false, message: 'Airline not found' });
+    }
+    
+    const [result] = await pool.query(
+      'INSERT INTO airplanes (name, airline_id, capacity) VALUES (?, ?, ?)',
+      [name, airline_id, capacity]
+    );
+    
+    // Generate seats for this airplane
+    const airplaneId = result.insertId;
+    
+    // Generate seats based on capacity
+    const rows = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const seatsToCreate = [];
+    
+    let remainingCapacity = capacity;
+    let rowIndex = 0;
+    
+    while (remainingCapacity > 0 && rowIndex < rows.length) {
+      const row = rows[rowIndex];
+      const seatsInRow = Math.min(remainingCapacity, 6); // Max 6 seats per row
+      
+      for (let col = 1; col <= seatsInRow; col++) {
+        seatsToCreate.push(`${row}${col}`);
+      }
+      
+      remainingCapacity -= seatsInRow;
+      rowIndex++;
+    }
+    
+    // Insert seats into the database
+    for (const seatNumber of seatsToCreate) {
+      await pool.query(
+        'INSERT INTO seats (airplane_id, seat_number, is_available) VALUES (?, ?, TRUE)',
+        [airplaneId, seatNumber]
+      );
+    }
+    
+    // Get the created airplane with airline name
+    const [airplaneRows] = await pool.query(`
+      SELECT a.*, al.name as airline_name 
+      FROM airplanes a
+      JOIN airlines al ON a.airline_id = al.id
+      WHERE a.id = ?
+    `, [airplaneId]);
+    
+    if (airplaneRows.length === 0) {
+      return res.status(500).json({ success: false, message: 'Failed to retrieve created airplane' });
+    }
+    
+    const airplane = airplaneRows[0];
+    
+    const newAirplane = {
+      id: airplane.id.toString(),
+      name: airplane.name,
+      airline_id: airplane.airline_id.toString(),
+      airlineId: airplane.airline_id.toString(), // For backward compatibility
+      airlineName: airplane.airline_name,
+      capacity: airplane.capacity,
+      created_at: airplane.created_at ? new Date(airplane.created_at).toISOString() : null
+    };
+    
+    res.status(201).json(newAirplane);
+  } catch (error) {
+    console.error('Error creating airplane:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // Flights
 apiRouter.get('/flights', async (req, res) => {
   try {
     const [rows] = await pool.query(`
-      SELECT f.*, g.name as gate_name, r.name as runway_name, a.name as airline_name 
-      FROM flights f
+      SELECT f.*, a.name as airline_name, g.name as gate_name, r.name as runway_name 
+      FROM flights f 
+      LEFT JOIN airlines a ON f.airline_id = a.id
       LEFT JOIN gates g ON f.gate_id = g.id
       LEFT JOIN runways r ON f.runway_id = r.id
-      LEFT JOIN airlines a ON f.airline_id = a.id
     `);
     
     const flights = rows.map(flight => ({
       id: flight.id.toString(),
-      flightNumber: flight.flight_number,
-      airline: flight.airline_id.toString(),
-      airlineName: flight.airline_name,
+      flight_number: flight.flight_number,
+      flightNumber: flight.flight_number, // For backward compatibility
+      airline_id: flight.airline_id.toString(),
+      airline: flight.airline_id.toString(), // For backward compatibility
+      airline_name: flight.airline_name,
+      airlineName: flight.airline_name, // For backward compatibility
+      airplane_id: flight.airplane_id ? flight.airplane_id.toString() : null,
+      gate_id: flight.gate_id ? flight.gate_id.toString() : null,
+      gate: flight.gate_name,
+      gate_number: flight.gate_name,
+      runway_id: flight.runway_id ? flight.runway_id.toString() : null,
+      runway: flight.runway_name,
+      runway_number: flight.runway_name,
       origin: flight.origin,
       destination: flight.destination,
-      departureTime: flight.departure_time,
-      arrivalTime: flight.arrival_time,
+      departure_time: flight.departure_time ? new Date(flight.departure_time).toISOString() : null,
+      departureTime: flight.departure_time ? new Date(flight.departure_time).toISOString() : null, // For backward compatibility
+      arrival_time: flight.arrival_time ? new Date(flight.arrival_time).toISOString() : null,
+      arrivalTime: flight.arrival_time ? new Date(flight.arrival_time).toISOString() : null, // For backward compatibility
       status: flight.status,
-      gate: flight.gate_name,
-      runway: flight.runway_name,
       price: flight.price,
+      created_at: flight.created_at ? new Date(flight.created_at).toISOString() : null,
       availableSeats: [], // Will be populated later
       bookedSeats: [] // Will be populated later
     }));
     
     // Get available seats for each flight
     for (const flight of flights) {
-      const [seats] = await pool.query(`
-        SELECT s.* FROM seats s
-        JOIN airplanes a ON s.airplane_id = a.id
-        JOIN flights f ON f.airplane_id = a.id
-        WHERE f.id = ? AND s.is_available = 1
-      `, [flight.id]);
-      
-      flight.availableSeats = seats.map(seat => seat.seat_number);
-      
-      const [bookedSeats] = await pool.query(`
-        SELECT r.seat_number, r.user_id as passengerId 
-        FROM reservations r
-        WHERE r.flight_id = ?
-      `, [flight.id]);
-      
-      flight.bookedSeats = bookedSeats.map(seat => ({
-        seatId: seat.seat_number,
-        passengerId: seat.passengerId.toString()
-      }));
+      if (flight.airplane_id) {
+        const [seats] = await pool.query(`
+          SELECT s.* FROM seats s
+          WHERE s.airplane_id = ? AND s.is_available = 1
+        `, [flight.airplane_id]);
+        
+        flight.availableSeats = seats.map(seat => seat.seat_number);
+        
+        const [bookedSeats] = await pool.query(`
+          SELECT r.seat_number, r.user_id as passengerId 
+          FROM reservations r
+          WHERE r.flight_id = ? AND r.status = 'confirmed'
+        `, [flight.id]);
+        
+        flight.bookedSeats = bookedSeats.map(seat => ({
+          seatId: seat.seat_number,
+          passengerId: seat.passengerId.toString()
+        }));
+      }
     }
     
     res.json(flights);
@@ -254,11 +703,11 @@ apiRouter.get('/flights', async (req, res) => {
 apiRouter.get('/flights/:id', async (req, res) => {
   try {
     const [rows] = await pool.query(`
-      SELECT f.*, g.name as gate_name, r.name as runway_name, a.name as airline_name 
+      SELECT f.*, a.name as airline_name, g.name as gate_name, r.name as runway_name 
       FROM flights f
+      LEFT JOIN airlines a ON f.airline_id = a.id
       LEFT JOIN gates g ON f.gate_id = g.id
       LEFT JOIN runways r ON f.runway_id = r.id
-      LEFT JOIN airlines a ON f.airline_id = a.id
       WHERE f.id = ?
     `, [req.params.id]);
     
@@ -270,30 +719,39 @@ apiRouter.get('/flights/:id', async (req, res) => {
     
     const [seats] = await pool.query(`
       SELECT s.* FROM seats s
-      JOIN airplanes a ON s.airplane_id = a.id
-      JOIN flights f ON f.airplane_id = a.id
-      WHERE f.id = ? AND s.is_available = 1
-    `, [req.params.id]);
+      WHERE s.airplane_id = ? AND s.is_available = 1
+    `, [flight.airplane_id]);
     
     const [bookedSeats] = await pool.query(`
       SELECT r.seat_number, r.user_id as passengerId 
       FROM reservations r
-      WHERE r.flight_id = ?
+      WHERE r.flight_id = ? AND r.status = 'confirmed'
     `, [req.params.id]);
     
     const flightObj = {
       id: flight.id.toString(),
-      flightNumber: flight.flight_number,
-      airline: flight.airline_id.toString(),
-      airlineName: flight.airline_name,
+      flight_number: flight.flight_number,
+      flightNumber: flight.flight_number, // For backward compatibility
+      airline_id: flight.airline_id.toString(),
+      airline: flight.airline_id.toString(), // For backward compatibility
+      airline_name: flight.airline_name,
+      airlineName: flight.airline_name, // For backward compatibility
+      airplane_id: flight.airplane_id ? flight.airplane_id.toString() : null,
+      gate_id: flight.gate_id ? flight.gate_id.toString() : null,
+      gate: flight.gate_name,
+      gate_number: flight.gate_name,
+      runway_id: flight.runway_id ? flight.runway_id.toString() : null,
+      runway: flight.runway_name,
+      runway_number: flight.runway_name,
       origin: flight.origin,
       destination: flight.destination,
-      departureTime: flight.departure_time,
-      arrivalTime: flight.arrival_time,
+      departure_time: flight.departure_time ? new Date(flight.departure_time).toISOString() : null,
+      departureTime: flight.departure_time ? new Date(flight.departure_time).toISOString() : null, // For backward compatibility
+      arrival_time: flight.arrival_time ? new Date(flight.arrival_time).toISOString() : null,
+      arrivalTime: flight.arrival_time ? new Date(flight.arrival_time).toISOString() : null, // For backward compatibility
       status: flight.status,
-      gate: flight.gate_name,
-      runway: flight.runway_name,
       price: flight.price,
+      created_at: flight.created_at ? new Date(flight.created_at).toISOString() : null,
       availableSeats: seats.map(seat => seat.seat_number),
       bookedSeats: bookedSeats.map(seat => ({
         seatId: seat.seat_number,
@@ -311,41 +769,50 @@ apiRouter.get('/flights/:id', async (req, res) => {
 apiRouter.get('/flights/airline/:airlineId', async (req, res) => {
   try {
     const [rows] = await pool.query(`
-      SELECT f.*, g.name as gate_name, r.name as runway_name, a.name as airline_name 
+      SELECT f.*, a.name as airline_name, g.name as gate_name, r.name as runway_name 
       FROM flights f
+      LEFT JOIN airlines a ON f.airline_id = a.id
       LEFT JOIN gates g ON f.gate_id = g.id
       LEFT JOIN runways r ON f.runway_id = r.id
-      LEFT JOIN airlines a ON f.airline_id = a.id
       WHERE f.airline_id = ?
     `, [req.params.airlineId]);
     
     const flights = await Promise.all(rows.map(async (flight) => {
       const [seats] = await pool.query(`
         SELECT s.* FROM seats s
-        JOIN airplanes a ON s.airplane_id = a.id
-        JOIN flights f ON f.airplane_id = a.id
-        WHERE f.id = ? AND s.is_available = 1
-      `, [flight.id]);
+        WHERE s.airplane_id = ? AND s.is_available = 1
+      `, [flight.airplane_id]);
       
       const [bookedSeats] = await pool.query(`
         SELECT r.seat_number, r.user_id as passengerId 
         FROM reservations r
-        WHERE r.flight_id = ?
+        WHERE r.flight_id = ? AND r.status = 'confirmed'
       `, [flight.id]);
       
       return {
         id: flight.id.toString(),
-        flightNumber: flight.flight_number,
-        airline: flight.airline_id.toString(),
-        airlineName: flight.airline_name,
+        flight_number: flight.flight_number,
+        flightNumber: flight.flight_number, // For backward compatibility
+        airline_id: flight.airline_id.toString(),
+        airline: flight.airline_id.toString(), // For backward compatibility
+        airline_name: flight.airline_name,
+        airlineName: flight.airline_name, // For backward compatibility
+        airplane_id: flight.airplane_id ? flight.airplane_id.toString() : null,
+        gate_id: flight.gate_id ? flight.gate_id.toString() : null,
+        gate: flight.gate_name,
+        gate_number: flight.gate_name,
+        runway_id: flight.runway_id ? flight.runway_id.toString() : null,
+        runway: flight.runway_name,
+        runway_number: flight.runway_name,
         origin: flight.origin,
         destination: flight.destination,
-        departureTime: flight.departure_time,
-        arrivalTime: flight.arrival_time,
+        departure_time: flight.departure_time ? new Date(flight.departure_time).toISOString() : null,
+        departureTime: flight.departure_time ? new Date(flight.departure_time).toISOString() : null, // For backward compatibility
+        arrival_time: flight.arrival_time ? new Date(flight.arrival_time).toISOString() : null,
+        arrivalTime: flight.arrival_time ? new Date(flight.arrival_time).toISOString() : null, // For backward compatibility
         status: flight.status,
-        gate: flight.gate_name,
-        runway: flight.runway_name,
         price: flight.price,
+        created_at: flight.created_at ? new Date(flight.created_at).toISOString() : null,
         availableSeats: seats.map(seat => seat.seat_number),
         bookedSeats: bookedSeats.map(seat => ({
           seatId: seat.seat_number,
@@ -558,11 +1025,11 @@ apiRouter.put('/flights/:id', async (req, res) => {
     
     // Get updated flight
     const [rows] = await pool.query(`
-      SELECT f.*, g.name as gate_name, r.name as runway_name, a.name as airline_name 
+      SELECT f.*, a.name as airline_name, g.name as gate_name, r.name as runway_name 
       FROM flights f
+      LEFT JOIN airlines a ON f.airline_id = a.id
       LEFT JOIN gates g ON f.gate_id = g.id
       LEFT JOIN runways r ON f.runway_id = r.id
-      LEFT JOIN airlines a ON f.airline_id = a.id
       WHERE f.id = ?
     `, [req.params.id]);
     
@@ -574,30 +1041,39 @@ apiRouter.put('/flights/:id', async (req, res) => {
     
     const [seats] = await pool.query(`
       SELECT s.* FROM seats s
-      JOIN airplanes a ON s.airplane_id = a.id
-      JOIN flights f ON f.airplane_id = a.id
-      WHERE f.id = ? AND s.is_available = 1
-    `, [req.params.id]);
+      WHERE s.airplane_id = ? AND s.is_available = 1
+    `, [flight.airplane_id]);
     
     const [bookedSeats] = await pool.query(`
       SELECT r.seat_number, r.user_id as passengerId 
       FROM reservations r
-      WHERE r.flight_id = ?
+      WHERE r.flight_id = ? AND r.status = 'confirmed'
     `, [req.params.id]);
     
     const updatedFlight = {
       id: flight.id.toString(),
-      flightNumber: flight.flight_number,
-      airline: flight.airline_id.toString(),
-      airlineName: flight.airline_name,
+      flight_number: flight.flight_number,
+      flightNumber: flight.flight_number, // For backward compatibility
+      airline_id: flight.airline_id.toString(),
+      airline: flight.airline_id.toString(), // For backward compatibility
+      airline_name: flight.airline_name,
+      airlineName: flight.airline_name, // For backward compatibility
+      airplane_id: flight.airplane_id ? flight.airplane_id.toString() : null,
+      gate_id: flight.gate_id ? flight.gate_id.toString() : null,
+      gate: flight.gate_name,
+      gate_number: flight.gate_name,
+      runway_id: flight.runway_id ? flight.runway_id.toString() : null,
+      runway: flight.runway_name,
+      runway_number: flight.runway_name,
       origin: flight.origin,
       destination: flight.destination,
-      departureTime: flight.departure_time,
-      arrivalTime: flight.arrival_time,
+      departure_time: flight.departure_time ? new Date(flight.departure_time).toISOString() : null,
+      departureTime: flight.departure_time ? new Date(flight.departure_time).toISOString() : null, // For backward compatibility
+      arrival_time: flight.arrival_time ? new Date(flight.arrival_time).toISOString() : null,
+      arrivalTime: flight.arrival_time ? new Date(flight.arrival_time).toISOString() : null, // For backward compatibility
       status: flight.status,
-      gate: flight.gate_name,
-      runway: flight.runway_name,
       price: flight.price,
+      created_at: flight.created_at ? new Date(flight.created_at).toISOString() : null,
       availableSeats: seats.map(seat => seat.seat_number),
       bookedSeats: bookedSeats.map(seat => ({
         seatId: seat.seat_number,
@@ -677,43 +1153,6 @@ apiRouter.delete('/flights/:id', async (req, res) => {
 });
 
 // Gates
-apiRouter.get('/gates', async (req, res) => {
-  try {
-    const [rows] = await pool.query('SELECT * FROM gates');
-    
-    const gates = rows.map(gate => ({
-      id: gate.id.toString(),
-      name: gate.name,
-      terminal: gate.terminal || 'Main Terminal',
-      isAvailable: true, // Default to true, will be updated based on flight schedules
-      scheduledFlights: [] // Will be populated from flights table
-    }));
-    
-    // Get scheduled flights for each gate
-    for (const gate of gates) {
-      const [flights] = await pool.query(`
-        SELECT id, departure_time, arrival_time 
-        FROM flights 
-        WHERE gate_id = ?
-      `, [gate.id]);
-      
-      if (flights.length > 0) {
-        gate.isAvailable = false;
-        gate.scheduledFlights = flights.map(flight => ({
-          flightId: flight.id.toString(),
-          from: flight.departure_time,
-          to: flight.arrival_time
-        }));
-      }
-    }
-    
-    res.json(gates);
-  } catch (error) {
-    console.error('Error fetching gates:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-});
-
 apiRouter.get('/gates/available', async (req, res) => {
   try {
     const { startTime, endTime } = req.query;
@@ -744,9 +1183,11 @@ apiRouter.get('/gates/available', async (req, res) => {
       .map(gate => ({
         id: gate.id.toString(),
         name: gate.name,
+        gate_number: gate.name, // For backward compatibility
         terminal: gate.terminal || 'Main Terminal',
         isAvailable: true,
-        scheduledFlights: []
+        scheduledFlights: [],
+        created_at: gate.created_at ? new Date(gate.created_at).toISOString() : null
       }));
     
     res.json(availableGates);
@@ -818,14 +1259,19 @@ apiRouter.put('/flights/:id/gate', async (req, res) => {
     
     res.json({
       id: updatedFlight.id.toString(),
-      flightNumber: updatedFlight.flight_number,
-      airline: updatedFlight.airline_id.toString(),
+      flight_number: updatedFlight.flight_number,
+      flightNumber: updatedFlight.flight_number, // For backward compatibility
+      airline_id: updatedFlight.airline_id.toString(),
+      airline: updatedFlight.airline_id.toString(), // For backward compatibility
       origin: updatedFlight.origin,
       destination: updatedFlight.destination,
-      departureTime: updatedFlight.departure_time,
-      arrivalTime: updatedFlight.arrival_time,
+      departure_time: updatedFlight.departure_time ? new Date(updatedFlight.departure_time).toISOString() : null,
+      departureTime: updatedFlight.departure_time ? new Date(updatedFlight.departure_time).toISOString() : null, // For backward compatibility
+      arrival_time: updatedFlight.arrival_time ? new Date(updatedFlight.arrival_time).toISOString() : null,
+      arrivalTime: updatedFlight.arrival_time ? new Date(updatedFlight.arrival_time).toISOString() : null, // For backward compatibility
       status: updatedFlight.status,
-      gate: updatedFlight.gate_name
+      gate: updatedFlight.gate_name,
+      gate_number: updatedFlight.gate_name
     });
   } catch (error) {
     console.error('Error assigning gate:', error);
@@ -834,51 +1280,6 @@ apiRouter.put('/flights/:id/gate', async (req, res) => {
 });
 
 // Runways
-apiRouter.get('/runways', async (req, res) => {
-  try {
-    const [rows] = await pool.query('SELECT * FROM runways');
-    
-    const runways = rows.map(runway => ({
-      id: runway.id.toString(),
-      name: runway.name,
-      isAvailable: true, // Default to true, will be updated based on flight schedules
-      scheduledUse: [] // Will be populated from flights table
-    }));
-    
-    // Get scheduled flights for each runway
-    for (const runway of runways) {
-      const [flights] = await pool.query(`
-        SELECT id, departure_time 
-        FROM flights 
-        WHERE runway_id = ?
-      `, [runway.id]);
-      
-      if (flights.length > 0) {
-        runway.isAvailable = false;
-        runway.scheduledUse = flights.map(flight => {
-          const departureTime = new Date(flight.departure_time);
-          const thirtyMinutesBefore = new Date(departureTime);
-          thirtyMinutesBefore.setMinutes(departureTime.getMinutes() - 30);
-          
-          const thirtyMinutesAfter = new Date(departureTime);
-          thirtyMinutesAfter.setMinutes(departureTime.getMinutes() + 30);
-          
-          return {
-            flightId: flight.id.toString(),
-            from: thirtyMinutesBefore.toISOString(),
-            to: thirtyMinutesAfter.toISOString()
-          };
-        });
-      }
-    }
-    
-    res.json(runways);
-  } catch (error) {
-    console.error('Error fetching runways:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-});
-
 apiRouter.get('/runways/available', async (req, res) => {
   try {
     const { startTime, endTime } = req.query;
@@ -908,8 +1309,10 @@ apiRouter.get('/runways/available', async (req, res) => {
       .map(runway => ({
         id: runway.id.toString(),
         name: runway.name,
+        runway_number: runway.name, // For backward compatibility
         isAvailable: true,
-        scheduledUse: []
+        scheduledUse: [],
+        created_at: runway.created_at ? new Date(runway.created_at).toISOString() : null
       }));
     
     res.json(availableRunways);
@@ -979,14 +1382,19 @@ apiRouter.put('/flights/:id/runway', async (req, res) => {
     
     res.json({
       id: updatedFlight.id.toString(),
-      flightNumber: updatedFlight.flight_number,
-      airline: updatedFlight.airline_id.toString(),
+      flight_number: updatedFlight.flight_number,
+      flightNumber: updatedFlight.flight_number, // For backward compatibility
+      airline_id: updatedFlight.airline_id.toString(),
+      airline: updatedFlight.airline_id.toString(), // For backward compatibility
       origin: updatedFlight.origin,
       destination: updatedFlight.destination,
-      departureTime: updatedFlight.departure_time,
-      arrivalTime: updatedFlight.arrival_time,
+      departure_time: updatedFlight.departure_time ? new Date(updatedFlight.departure_time).toISOString() : null,
+      departureTime: updatedFlight.departure_time ? new Date(updatedFlight.departure_time).toISOString() : null, // For backward compatibility
+      arrival_time: updatedFlight.arrival_time ? new Date(updatedFlight.arrival_time).toISOString() : null,
+      arrivalTime: updatedFlight.arrival_time ? new Date(updatedFlight.arrival_time).toISOString() : null, // For backward compatibility
       status: updatedFlight.status,
-      runway: updatedFlight.runway_name
+      runway: updatedFlight.runway_name,
+      runway_number: updatedFlight.runway_name
     });
   } catch (error) {
     console.error('Error assigning runway:', error);
@@ -1009,6 +1417,7 @@ apiRouter.get('/notifications', async (req, res) => {
       message: notif.message,
       title: notif.title,
       timestamp: notif.created_at,
+      created_at: notif.created_at,
       sender: {
         id: notif.user_id ? notif.user_id.toString() : "1",
         role: notif.user_role || "admin"
@@ -1017,7 +1426,11 @@ apiRouter.get('/notifications', async (req, res) => {
       targetId: notif.target_role || (notif.flight_id ? notif.flight_id.toString() : undefined),
       flightId: notif.flight_id ? notif.flight_id.toString() : undefined,
       flightNumber: notif.flight_number,
-      senderRole: notif.user_role || "admin"
+      senderRole: notif.user_role || "admin",
+      user_id: notif.user_id ? notif.user_id.toString() : undefined,
+      user_role: notif.user_role,
+      target_role: notif.target_role,
+      flight_id: notif.flight_id ? notif.flight_id.toString() : undefined
     }));
     
     res.json(notifications);
@@ -1076,6 +1489,7 @@ apiRouter.get('/notifications/user/:userId', async (req, res) => {
       message: notif.message,
       title: notif.title,
       timestamp: notif.created_at,
+      created_at: notif.created_at,
       sender: {
         id: notif.user_id ? notif.user_id.toString() : "1",
         role: notif.user_role || "admin"
@@ -1084,7 +1498,11 @@ apiRouter.get('/notifications/user/:userId', async (req, res) => {
       targetId: notif.target_role || (notif.flight_id ? notif.flight_id.toString() : undefined),
       flightId: notif.flight_id ? notif.flight_id.toString() : undefined,
       flightNumber: notif.flight_number,
-      senderRole: notif.user_role || "admin"
+      senderRole: notif.user_role || "admin",
+      user_id: notif.user_id ? notif.user_id.toString() : undefined,
+      user_role: notif.user_role,
+      target_role: notif.target_role,
+      flight_id: notif.flight_id ? notif.flight_id.toString() : undefined
     }));
     
     res.json(notifications);
@@ -1194,6 +1612,7 @@ apiRouter.post('/notifications', async (req, res) => {
       message: notification.message,
       title: notification.title,
       timestamp: notification.created_at,
+      created_at: notification.created_at,
       sender: {
         id: notification.user_id ? notification.user_id.toString() : "1",
         role: notification.user_role || "admin"
@@ -1202,7 +1621,11 @@ apiRouter.post('/notifications', async (req, res) => {
       targetId: notification.target_role || (notification.flight_id ? notification.flight_id.toString() : undefined),
       flightId: notification.flight_id ? notification.flight_id.toString() : undefined,
       flightNumber: notification.flight_number,
-      senderRole: notification.user_role || "admin"
+      senderRole: notification.user_role || "admin",
+      user_id: notification.user_id ? notification.user_id.toString() : undefined,
+      user_role: notification.user_role,
+      target_role: notification.target_role,
+      flight_id: notification.flight_id ? notification.flight_id.toString() : undefined
     };
     
     res.status(201).json(newNotification);
@@ -1259,6 +1682,7 @@ apiRouter.put('/notifications/:id/read', async (req, res) => {
       message: notification.message,
       title: notification.title,
       timestamp: notification.created_at,
+      created_at: notification.created_at,
       sender: {
         id: notification.user_id ? notification.user_id.toString() : "1",
         role: notification.user_role || "admin"
@@ -1268,6 +1692,10 @@ apiRouter.put('/notifications/:id/read', async (req, res) => {
       flightId: notification.flight_id ? notification.flight_id.toString() : undefined,
       flightNumber: notification.flight_number,
       senderRole: notification.user_role || "admin",
+      user_id: notification.user_id ? notification.user_id.toString() : undefined,
+      user_role: notification.user_role,
+      target_role: notification.target_role,
+      flight_id: notification.flight_id ? notification.flight_id.toString() : undefined,
       isRead: true
     });
   } catch (error) {
@@ -1280,7 +1708,7 @@ apiRouter.put('/notifications/:id/read', async (req, res) => {
 apiRouter.get('/reservations', async (req, res) => {
   try {
     const [rows] = await pool.query(`
-      SELECT r.*, f.flight_number, u.name as user_name
+      SELECT r.*, f.flight_number, f.origin, f.destination, f.departure_time, f.arrival_time, u.name as user_name
       FROM reservations r
       JOIN flights f ON r.flight_id = f.id
       JOIN users u ON r.user_id = u.id
@@ -1289,14 +1717,25 @@ apiRouter.get('/reservations', async (req, res) => {
     
     const reservations = rows.map(reservation => ({
       id: reservation.id.toString(),
-      flightId: reservation.flight_id.toString(),
+      flight_id: reservation.flight_id.toString(),
+      flightId: reservation.flight_id.toString(), // For backward compatibility
+      user_id: reservation.user_id.toString(),
+      userId: reservation.user_id.toString(), // For backward compatibility
       passengerId: reservation.user_id.toString(),
-      userId: reservation.user_id.toString(), // Legacy field
-      seatId: reservation.seat_number,
-      seat: reservation.seat_number, // Legacy field
-      timestamp: reservation.created_at,
+      seat_number: reservation.seat_number,
+      seat: reservation.seat_number, // For backward compatibility
+      seatId: reservation.seat_number, // For backward compatibility
       status: reservation.status,
-      flightNumber: reservation.flight_number,
+      created_at: reservation.created_at ? new Date(reservation.created_at).toISOString() : null,
+      timestamp: reservation.created_at ? new Date(reservation.created_at).toISOString() : null, // For backward compatibility
+      flight_number: reservation.flight_number,
+      flightNumber: reservation.flight_number, // For backward compatibility
+      origin: reservation.origin,
+      destination: reservation.destination,
+      departure_time: reservation.departure_time ? new Date(reservation.departure_time).toISOString() : null,
+      departureTime: reservation.departure_time ? new Date(reservation.departure_time).toISOString() : null, // For backward compatibility
+      arrival_time: reservation.arrival_time ? new Date(reservation.arrival_time).toISOString() : null,
+      arrivalTime: reservation.arrival_time ? new Date(reservation.arrival_time).toISOString() : null, // For backward compatibility
       passengerName: reservation.user_name
     }));
     
@@ -1319,18 +1758,25 @@ apiRouter.get('/reservations/user/:userId', async (req, res) => {
     
     const reservations = rows.map(reservation => ({
       id: reservation.id.toString(),
-      flightId: reservation.flight_id.toString(),
+      flight_id: reservation.flight_id.toString(),
+      flightId: reservation.flight_id.toString(), // For backward compatibility
+      user_id: reservation.user_id.toString(),
+      userId: reservation.user_id.toString(), // For backward compatibility
       passengerId: reservation.user_id.toString(),
-      userId: reservation.user_id.toString(), // Legacy field
-      seatId: reservation.seat_number,
-      seat: reservation.seat_number, // Legacy field
-      timestamp: reservation.created_at,
+      seat_number: reservation.seat_number,
+      seat: reservation.seat_number, // For backward compatibility
+      seatId: reservation.seat_number, // For backward compatibility
       status: reservation.status,
-      flightNumber: reservation.flight_number,
+      created_at: reservation.created_at ? new Date(reservation.created_at).toISOString() : null,
+      timestamp: reservation.created_at ? new Date(reservation.created_at).toISOString() : null, // For backward compatibility
+      flight_number: reservation.flight_number,
+      flightNumber: reservation.flight_number, // For backward compatibility
       origin: reservation.origin,
       destination: reservation.destination,
-      departureTime: reservation.departure_time,
-      arrivalTime: reservation.arrival_time,
+      departure_time: reservation.departure_time ? new Date(reservation.departure_time).toISOString() : null,
+      departureTime: reservation.departure_time ? new Date(reservation.departure_time).toISOString() : null, // For backward compatibility
+      arrival_time: reservation.arrival_time ? new Date(reservation.arrival_time).toISOString() : null,
+      arrivalTime: reservation.arrival_time ? new Date(reservation.arrival_time).toISOString() : null, // For backward compatibility
       flightStatus: reservation.flight_status
     }));
     
@@ -1353,13 +1799,17 @@ apiRouter.get('/reservations/flight/:flightId', async (req, res) => {
     
     const reservations = rows.map(reservation => ({
       id: reservation.id.toString(),
-      flightId: reservation.flight_id.toString(),
+      flight_id: reservation.flight_id.toString(),
+      flightId: reservation.flight_id.toString(), // For backward compatibility
+      user_id: reservation.user_id.toString(),
+      userId: reservation.user_id.toString(), // For backward compatibility
       passengerId: reservation.user_id.toString(),
-      userId: reservation.user_id.toString(), // Legacy field
-      seatId: reservation.seat_number,
-      seat: reservation.seat_number, // Legacy field
-      timestamp: reservation.created_at,
+      seat_number: reservation.seat_number,
+      seat: reservation.seat_number, // For backward compatibility
+      seatId: reservation.seat_number, // For backward compatibility
       status: reservation.status,
+      created_at: reservation.created_at ? new Date(reservation.created_at).toISOString() : null,
+      timestamp: reservation.created_at ? new Date(reservation.created_at).toISOString() : null, // For backward compatibility
       passengerName: reservation.user_name,
       passengerEmail: reservation.user_email
     }));
@@ -1428,14 +1878,19 @@ apiRouter.post('/reservations', async (req, res) => {
     
     const newReservation = {
       id: reservation.id.toString(),
-      flightId: reservation.flight_id.toString(),
+      flight_id: reservation.flight_id.toString(),
+      flightId: reservation.flight_id.toString(), // For backward compatibility
+      user_id: reservation.user_id.toString(),
+      userId: reservation.user_id.toString(), // For backward compatibility
       passengerId: reservation.user_id.toString(),
-      userId: reservation.user_id.toString(), // Legacy field
-      seatId: reservation.seat_number,
-      seat: reservation.seat_number, // Legacy field
-      timestamp: reservation.created_at,
+      seat_number: reservation.seat_number,
+      seat: reservation.seat_number, // For backward compatibility
+      seatId: reservation.seat_number, // For backward compatibility
       status: reservation.status,
-      flightNumber: reservation.flight_number
+      created_at: reservation.created_at ? new Date(reservation.created_at).toISOString() : null,
+      timestamp: reservation.created_at ? new Date(reservation.created_at).toISOString() : null, // For backward compatibility
+      flight_number: reservation.flight_number,
+      flightNumber: reservation.flight_number // For backward compatibility
     };
     
     res.status(201).json({ success: true, reservation: newReservation });
@@ -1498,14 +1953,19 @@ apiRouter.put('/reservations/:id/cancel', async (req, res) => {
     
     res.json({
       id: updatedReservation.id.toString(),
-      flightId: updatedReservation.flight_id.toString(),
+      flight_id: updatedReservation.flight_id.toString(),
+      flightId: updatedReservation.flight_id.toString(), // For backward compatibility
+      user_id: updatedReservation.user_id.toString(),
+      userId: updatedReservation.user_id.toString(), // For backward compatibility
       passengerId: updatedReservation.user_id.toString(),
-      userId: updatedReservation.user_id.toString(), // Legacy field
-      seatId: updatedReservation.seat_number,
-      seat: updatedReservation.seat_number, // Legacy field
-      timestamp: updatedReservation.created_at,
+      seat_number: updatedReservation.seat_number,
+      seat: updatedReservation.seat_number, // For backward compatibility
+      seatId: updatedReservation.seat_number, // For backward compatibility
       status: updatedReservation.status,
-      flightNumber: updatedReservation.flight_number
+      created_at: updatedReservation.created_at ? new Date(updatedReservation.created_at).toISOString() : null,
+      timestamp: updatedReservation.created_at ? new Date(updatedReservation.created_at).toISOString() : null, // For backward compatibility
+      flight_number: updatedReservation.flight_number,
+      flightNumber: updatedReservation.flight_number // For backward compatibility
     });
   } catch (error) {
     console.error('Error cancelling reservation:', error);
@@ -1541,14 +2001,19 @@ apiRouter.put('/reservations/:id/check-in', async (req, res) => {
     
     res.json({
       id: updatedReservation.id.toString(),
-      flightId: updatedReservation.flight_id.toString(),
+      flight_id: updatedReservation.flight_id.toString(),
+      flightId: updatedReservation.flight_id.toString(), // For backward compatibility
+      user_id: updatedReservation.user_id.toString(),
+      userId: updatedReservation.user_id.toString(), // For backward compatibility
       passengerId: updatedReservation.user_id.toString(),
-      userId: updatedReservation.user_id.toString(), // Legacy field
-      seatId: updatedReservation.seat_number,
-      seat: updatedReservation.seat_number, // Legacy field
-      timestamp: updatedReservation.created_at,
+      seat_number: updatedReservation.seat_number,
+      seat: updatedReservation.seat_number, // For backward compatibility
+      seatId: updatedReservation.seat_number, // For backward compatibility
       status: updatedReservation.status,
-      flightNumber: updatedReservation.flight_number
+      created_at: updatedReservation.created_at ? new Date(updatedReservation.created_at).toISOString() : null,
+      timestamp: updatedReservation.created_at ? new Date(updatedReservation.created_at).toISOString() : null, // For backward compatibility
+      flight_number: updatedReservation.flight_number,
+      flightNumber: updatedReservation.flight_number // For backward compatibility
     });
   } catch (error) {
     console.error('Error checking in reservation:', error);

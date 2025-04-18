@@ -1,7 +1,10 @@
 
 export interface User {
   id: string;
-  name: string;
+  name?: string; // Added optional
+  firstName?: string; // Added optional
+  lastName?: string; // Added optional
+  username?: string; // Added optional
   email: string;
   password?: string;
   role: "admin" | "staff" | "passenger" | "airline";
@@ -26,6 +29,7 @@ export interface Airplane {
   created_at?: string;
   // For backward compatibility
   airlineId?: string;
+  airlineName?: string; // Added for display purposes
 }
 
 export interface Gate {
@@ -36,7 +40,7 @@ export interface Gate {
   // For backward compatibility
   gate_number?: string;
   isAvailable?: boolean;
-  scheduledFlights?: number;
+  scheduledFlights?: number | any[]; // Updated to accept array of scheduled flights
 }
 
 export interface Runway {
@@ -46,6 +50,7 @@ export interface Runway {
   // For backward compatibility
   runway_number?: string;
   isAvailable?: boolean;
+  scheduledUse?: any[]; // Added for scheduled use
 }
 
 export interface Seat {
@@ -85,12 +90,13 @@ export interface Flight {
   // For backward compatibility
   flightNumber?: string;
   airline?: string;
+  airlineName?: string;
   departureTime?: string;
   arrivalTime?: string;
   gate?: string;
   runway?: string;
   availableSeats?: string[];
-  bookedSeats?: { seatId: string }[] | string[];
+  bookedSeats?: { seatId: string; passengerId?: string }[] | string[];
 }
 
 export interface Reservation {
@@ -114,6 +120,9 @@ export interface Reservation {
   seat?: string;
   seatId?: string;
   timestamp?: string;
+  flightStatus?: string; // Added for frontend display
+  passengerName?: string; // Added for staff views
+  passengerEmail?: string; // Added for staff views
 }
 
 export interface Notification {
@@ -135,6 +144,8 @@ export interface Notification {
   targetId?: string;
   timestamp?: string;
   flightId?: string;
+  flightNumber?: string; // Added for better display
+  isRead?: boolean; // Added for tracking read status
 }
 
 // Auth response types
