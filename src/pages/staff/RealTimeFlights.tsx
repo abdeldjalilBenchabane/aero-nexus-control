@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import PageLayout from "@/components/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +26,6 @@ const RealTimeFlights = () => {
   useEffect(() => {
     fetchFlights();
     
-    // Set up polling every 30 seconds for real-time updates
     const interval = setInterval(fetchFlights, 30000);
     
     return () => clearInterval(interval);
@@ -143,8 +141,8 @@ const RealTimeFlights = () => {
       case "departed": return "default";
       case "in_air": return "default";
       case "landed": return "default";
-      case "arrived": return "success";
-      case "delayed": return "destructive"; // Changed from "warning" to "destructive"
+      case "arrived": return "default";
+      case "delayed": return "destructive";
       case "cancelled": return "destructive";
       default: return "outline";
     }
