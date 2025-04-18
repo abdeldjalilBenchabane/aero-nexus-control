@@ -78,7 +78,7 @@ const ManageUsers = () => {
       setFilteredUsers(users);
     } else {
       const filtered = users.filter(user => 
-        user.name.toLowerCase().includes(term) ||
+        user.name?.toLowerCase().includes(term) ||
         user.email.toLowerCase().includes(term) ||
         user.role.toLowerCase().includes(term)
       );
@@ -142,8 +142,8 @@ const ManageUsers = () => {
     setIsEditMode(true);
     setSelectedUser(user);
     setNewUser({
-      name: user.name,
-      email: user.email,
+      name: user.name || "",
+      email: user.email || "",
       password: "", // We don't show or edit existing passwords
       role: user.role
     });
@@ -284,19 +284,18 @@ const ManageUsers = () => {
                   />
                 </div>
                 
-                {!isEditMode && (
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="password" className="text-right">Password</Label>
-                    <Input 
-                      id="password" 
-                      name="password"
-                      type="password"
-                      className="col-span-3" 
-                      value={newUser.password}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                )}
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="password" className="text-right">Password</Label>
+                  <Input 
+                    id="password" 
+                    name="password"
+                    type="password"
+                    className="col-span-3" 
+                    value={newUser.password}
+                    onChange={handleInputChange}
+                    placeholder={isEditMode ? "Leave blank to keep current password" : ""}
+                  />
+                </div>
                 
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="email" className="text-right">Email</Label>
@@ -360,7 +359,7 @@ const ManageUsers = () => {
                 filteredUsers.map(user => (
                   <TableRow key={user.id}>
                     <TableCell>{user.id}</TableCell>
-                    <TableCell>{user.name}</TableCell>
+                    <TableCell>{user.name || "—"}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -369,7 +368,9 @@ const ManageUsers = () => {
                         <span className="capitalize">{user.role}</span>
                       </div>
                     </TableCell>
-                    <TableCell>{new Date(user.created_at || '').toLocaleString()}</TableCell>
+                    <TableCell>
+                      {user.created_at ? new Date(user.created_at).toLocaleString() : "—"}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="icon" onClick={() => handleEditUser(user)}>

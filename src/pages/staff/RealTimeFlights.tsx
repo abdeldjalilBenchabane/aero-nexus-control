@@ -1,26 +1,40 @@
+
 import { useState, useEffect } from "react";
 import PageLayout from "@/components/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import FlightTable from "@/components/FlightTable";
-import { flights } from "@/lib/db";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { flightApi } from "@/lib/api";
 import type { Flight, FlightStatus } from "@/lib/types";
 import { Search, ArrowUpDown, RefreshCw } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
 
 const RealTimeFlights = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredFlights, setFilteredFlights] = useState<Flight[]>(flights);
-  const [sortField, setSortField] = useState<keyof Flight>("departureTime");
+  const [filteredFlights, setFilteredFlights] = useState<Flight[]>([]);
+  const [allFlights, setAllFlights] = useState<Flight[]>([]);
+  const [sortField, setSortField] = useState<keyof Flight>("departure_time");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [statusFilter, setStatusFilter] = useState("all");
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    let result = [...flights];
+    fetchFlights();
+    
+    // Set up polling every 30 seconds for real-time updates
+    const interval = setInterval(fetchFlights, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    let result = [...allFlights];
     
     if (statusFilter !== "all") {
       result = result.filter(flight => flight.status === statusFilter);
@@ -30,9 +44,9 @@ const RealTimeFlights = () => {
       const term = searchTerm.toLowerCase();
       result = result.filter(
         flight =>
-          flight.flightNumber?.toLowerCase().includes(term) ||
-          flight.airline?.toLowerCase().includes(term) ||
-          flight.origin?.toLowerCase().includes(term) ||
+          (flight.flight_number?.toLowerCase().includes(term) || false) ||
+          (flight.airline_name?.toLowerCase().includes(term) || false) ||
+          (flight.origin?.toLowerCase().includes(term) || false) ||
           flight.destination.toLowerCase().includes(term)
       );
     }
@@ -41,7 +55,7 @@ const RealTimeFlights = () => {
       let valueA: any = a[sortField as keyof Flight];
       let valueB: any = b[sortField as keyof Flight];
       
-      if (typeof valueA === "string" && (sortField === "departureTime" || sortField === "arrivalTime")) {
+      if (typeof valueA === "string" && (sortField === "departure_time" || sortField === "arrival_time")) {
         valueA = new Date(valueA).getTime();
         valueB = new Date(valueB).getTime();
       }
@@ -52,7 +66,25 @@ const RealTimeFlights = () => {
     });
     
     setFilteredFlights(result);
-  }, [searchTerm, statusFilter, sortField, sortDirection, lastUpdated]);
+  }, [searchTerm, statusFilter, sortField, sortDirection, allFlights, lastUpdated]);
+
+  const fetchFlights = async () => {
+    try {
+      setLoading(true);
+      const data = await flightApi.getAll();
+      setAllFlights(data);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error("Error fetching flights:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch flight data",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -68,26 +100,55 @@ const RealTimeFlights = () => {
   };
 
   const refreshData = () => {
-    setLastUpdated(new Date());
+    fetchFlights();
   };
 
-  const updateFlightStatus = (flight: Flight, newStatus: FlightStatus) => {
-    console.log(`Updating flight ${flight.flight_number} status to ${newStatus}`);
-    refreshData();
+  const updateFlightStatus = async (flight: Flight, newStatus: FlightStatus) => {
+    try {
+      await flightApi.update(flight.id, { status: newStatus });
+      toast({
+        title: "Status Updated",
+        description: `Flight ${flight.flight_number} status changed to ${newStatus}`
+      });
+      refreshData();
+    } catch (error) {
+      console.error(`Error updating flight ${flight.flight_number} status:`, error);
+      toast({
+        title: "Update Failed",
+        description: "Could not update flight status",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleUpdateUser = () => {
-    const nextStatus: Record<string, FlightStatus> = {
+  const getNextStatus = (currentStatus: FlightStatus): FlightStatus => {
+    const statusFlow: Record<FlightStatus, FlightStatus> = {
       "scheduled": "boarding",
       "boarding": "departed",
-      "departed": "arrived",
+      "departed": "in_air",
+      "in_air": "landed",
+      "landed": "arrived",
       "arrived": "arrived",
       "delayed": "scheduled",
-      "cancelled": "scheduled",
-      "landed": "arrived",
-      "in_air": "arrived"
+      "cancelled": "scheduled"
     };
-  }
+    
+    return statusFlow[currentStatus] || "scheduled";
+  };
+
+  const getStatusBadgeVariant = (status: FlightStatus) => {
+    switch (status) {
+      case "scheduled": return "outline";
+      case "boarding": return "secondary";
+      case "departed": return "default";
+      case "in_air": return "default";
+      case "landed": return "default";
+      case "arrived": return "success";
+      case "delayed": return "warning";
+      case "cancelled": return "destructive";
+      default: return "outline";
+    }
+  };
 
   return (
     <PageLayout title="Real-Time Flight Tracking">
@@ -148,6 +209,8 @@ const RealTimeFlights = () => {
                     <SelectItem value="scheduled">Scheduled</SelectItem>
                     <SelectItem value="boarding">Boarding</SelectItem>
                     <SelectItem value="departed">Departed</SelectItem>
+                    <SelectItem value="in_air">In Air</SelectItem>
+                    <SelectItem value="landed">Landed</SelectItem>
                     <SelectItem value="arrived">Arrived</SelectItem>
                     <SelectItem value="delayed">Delayed</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -169,12 +232,12 @@ const RealTimeFlights = () => {
                     <SelectValue placeholder="Sort flights" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="departureTime-asc">Departure Time (Earliest)</SelectItem>
-                    <SelectItem value="departureTime-desc">Departure Time (Latest)</SelectItem>
-                    <SelectItem value="arrivalTime-asc">Arrival Time (Earliest)</SelectItem>
-                    <SelectItem value="arrivalTime-desc">Arrival Time (Latest)</SelectItem>
-                    <SelectItem value="flightNumber-asc">Flight Number (A-Z)</SelectItem>
-                    <SelectItem value="flightNumber-desc">Flight Number (Z-A)</SelectItem>
+                    <SelectItem value="departure_time-asc">Departure Time (Earliest)</SelectItem>
+                    <SelectItem value="departure_time-desc">Departure Time (Latest)</SelectItem>
+                    <SelectItem value="arrival_time-asc">Arrival Time (Earliest)</SelectItem>
+                    <SelectItem value="arrival_time-desc">Arrival Time (Latest)</SelectItem>
+                    <SelectItem value="flight_number-asc">Flight Number (A-Z)</SelectItem>
+                    <SelectItem value="flight_number-desc">Flight Number (Z-A)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -182,31 +245,102 @@ const RealTimeFlights = () => {
           </Card>
 
           <div className="flex-1 w-full">
-            <FlightTable 
-              flights={filteredFlights}
-              searchable={false}
-              filterable={false}
-              actions={[
-                {
-                  label: "Update",
-                  onClick: (flight) => {
-                    const nextStatus: Record<string, FlightStatus> = {
-                      "scheduled": "boarding",
-                      "boarding": "departed",
-                      "departed": "arrived",
-                      "arrived": "arrived",
-                      "delayed": "scheduled",
-                      "cancelled": "scheduled",
-                      "landed": "arrived",
-                      "in_air": "arrived"
-                    };
-                    updateFlightStatus(flight, nextStatus[flight.status]);
-                  },
-                  variant: "outline"
-                }
-              ]}
-              emptyMessage="No flights match your search criteria"
-            />
+            <Card>
+              <CardContent className="p-0">
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[100px]">
+                          <div className="flex items-center space-x-1">
+                            <span>Flight</span>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => toggleSort("flight_number")}>
+                              <ArrowUpDown className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableHead>
+                        <TableHead>Airline</TableHead>
+                        <TableHead>
+                          <div className="flex items-center space-x-1">
+                            <span>Origin</span>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => toggleSort("origin")}>
+                              <ArrowUpDown className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableHead>
+                        <TableHead>
+                          <div className="flex items-center space-x-1">
+                            <span>Destination</span>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => toggleSort("destination")}>
+                              <ArrowUpDown className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableHead>
+                        <TableHead>
+                          <div className="flex items-center space-x-1">
+                            <span>Departure</span>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => toggleSort("departure_time")}>
+                              <ArrowUpDown className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableHead>
+                        <TableHead>Gate</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {loading ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="h-24 text-center">
+                            Loading flight data...
+                          </TableCell>
+                        </TableRow>
+                      ) : filteredFlights.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={8} className="h-24 text-center">
+                            No flights match your search criteria
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredFlights.map((flight) => (
+                          <TableRow key={flight.id}>
+                            <TableCell className="font-medium">{flight.flight_number}</TableCell>
+                            <TableCell>{flight.airline_name}</TableCell>
+                            <TableCell>{flight.origin}</TableCell>
+                            <TableCell>{flight.destination}</TableCell>
+                            <TableCell>
+                              {new Date(flight.departure_time).toLocaleString([], {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </TableCell>
+                            <TableCell>{flight.gate_number || "—"}</TableCell>
+                            <TableCell>
+                              <Badge variant={getStatusBadgeVariant(flight.status)} className="capitalize">
+                                {flight.status.replace('_', ' ')}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => updateFlightStatus(flight, getNextStatus(flight.status))}
+                                disabled={flight.status === "arrived" || flight.status === "cancelled"}
+                              >
+                                Update
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

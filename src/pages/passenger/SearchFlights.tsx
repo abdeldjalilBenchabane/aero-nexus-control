@@ -1,206 +1,205 @@
 
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import PageLayout from "@/components/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { flights, Flight } from "@/lib/db";
-import { useNavigate } from "react-router-dom";
-import { ArrowRight, Calendar, Search, Map, Filter, ArrowLeftRight } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Flight, Seat } from "@/lib/types";
+import { flightApi, reservationApi, seatApi } from "@/lib/api";
+import { Search, Plane, CalendarIcon } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import SeatMap from "@/components/SeatMap";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { format } from "date-fns";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-interface SearchParams {
-  origin: string;
-  destination: string;
-  departureDate: Date | undefined;
-  flightType: "oneWay" | "roundTrip";
-}
 
 const SearchFlights = () => {
-  const navigate = useNavigate();
-  
-  // Search params
-  const [searchParams, setSearchParams] = useState<SearchParams>({
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [searchParams, setSearchParams] = useState({
     origin: "",
     destination: "",
-    departureDate: undefined,
-    flightType: "oneWay"
+    date: null as Date | null
   });
-  
-  // Filter and sorting
-  const [priceRange, setPriceRange] = useState<string>("all");
-  const [airline, setAirline] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<string>("departureTime");
-  
-  // Search results
-  const [hasSearched, setHasSearched] = useState(false);
-  const [searchResults, setSearchResults] = useState<Flight[]>([]);
-  
-  // Available airlines (for filter)
-  const availableAirlines = Array.from(new Set(flights.map(flight => flight.airline)));
-  
-  // Handle search
-  const handleSearch = () => {
-    if (!searchParams.origin || !searchParams.destination || !searchParams.departureDate) {
+  const [flights, setFlights] = useState<Flight[]>([]);
+  const [searchPerformed, setSearchPerformed] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
+  const [selectedSeat, setSelectedSeat] = useState<string>("");
+  const [isReservationOpen, setIsReservationOpen] = useState(false);
+  const [reservationLoading, setReservationLoading] = useState(false);
+  const [availableSeats, setAvailableSeats] = useState<Seat[]>([]);
+
+  const handleSearch = async () => {
+    try {
+      setLoading(true);
+      setSearchPerformed(true);
+      
+      const formattedDate = searchParams.date ? format(searchParams.date, 'yyyy-MM-dd') : undefined;
+      
+      const results = await flightApi.search({
+        origin: searchParams.origin || undefined,
+        destination: searchParams.destination || undefined,
+        date: formattedDate
+      });
+      
+      setFlights(results);
+    } catch (error) {
+      console.error("Error searching flights:", error);
+      toast({
+        title: "Error",
+        description: "Failed to search for flights",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setSearchParams(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSelectFlight = async (flight: Flight) => {
+    setSelectedFlight(flight);
+    
+    try {
+      const seats = await seatApi.getAvailable(flight.id);
+      setAvailableSeats(seats);
+      setIsReservationOpen(true);
+    } catch (error) {
+      console.error("Error fetching available seats:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load available seats",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSeatSelect = (seatNumber: string) => {
+    setSelectedSeat(seatNumber);
+  };
+
+  const handleReservation = async () => {
+    if (!user || !selectedFlight || !selectedSeat) {
+      toast({
+        title: "Error",
+        description: "Please select a seat to make a reservation",
+        variant: "destructive"
+      });
       return;
     }
     
-    // Mock search - in a real app this would be an API call
-    const searchDate = searchParams.departureDate;
-    
-    let results = flights.filter(flight => {
-      // Match origin and destination
-      const matchesRoute = 
-        flight.origin.toLowerCase().includes(searchParams.origin.toLowerCase()) &&
-        flight.destination.toLowerCase().includes(searchParams.destination.toLowerCase());
+    try {
+      setReservationLoading(true);
       
-      // Match date (just the day, not time)
-      const flightDate = new Date(flight.departureTime);
-      const matchesDate = 
-        flightDate.getDate() === searchDate.getDate() &&
-        flightDate.getMonth() === searchDate.getMonth() &&
-        flightDate.getFullYear() === searchDate.getFullYear();
+      // First, get the seat ID by its number
+      const seat = await seatApi.getBySeatNumber(selectedFlight.id, selectedSeat);
       
-      // Only show scheduled or delayed flights (not departed, arrived, or cancelled)
-      const validStatus = ["scheduled", "delayed"].includes(flight.status);
-      
-      return matchesRoute && matchesDate && validStatus;
-    });
-    
-    // Apply airline filter
-    if (airline !== "all") {
-      results = results.filter(flight => flight.airline === airline);
-    }
-    
-    // Apply sorting
-    results.sort((a, b) => {
-      if (sortBy === "departureTime") {
-        return new Date(a.departureTime).getTime() - new Date(b.departureTime).getTime();
-      } else if (sortBy === "price") {
-        // In a real app, we would sort by price here
-        return 0;
-      } else if (sortBy === "duration") {
-        const durationA = new Date(a.arrivalTime).getTime() - new Date(a.departureTime).getTime();
-        const durationB = new Date(b.arrivalTime).getTime() - new Date(b.departureTime).getTime();
-        return durationA - durationB;
+      if (!seat) {
+        throw new Error("Selected seat not found");
       }
-      return 0;
-    });
-    
-    setSearchResults(results);
-    setHasSearched(true);
-  };
-  
-  // Swap origin and destination
-  const swapLocations = () => {
-    setSearchParams(prev => ({
-      ...prev,
-      origin: prev.destination,
-      destination: prev.origin
-    }));
+      
+      // Create reservation
+      const result = await reservationApi.create({
+        user_id: user.id,
+        flight_id: selectedFlight.id,
+        seat_id: seat.id
+      });
+      
+      toast({
+        title: "Success",
+        description: `Reservation confirmed for flight ${selectedFlight.flight_number}, seat ${selectedSeat}`
+      });
+      
+      setIsReservationOpen(false);
+      setSelectedFlight(null);
+      setSelectedSeat("");
+    } catch (error) {
+      console.error("Error making reservation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to make reservation. The seat may no longer be available.",
+        variant: "destructive"
+      });
+    } finally {
+      setReservationLoading(false);
+    }
   };
 
   return (
     <PageLayout title="Search Flights">
-      <div className="space-y-6">
-        {/* Search Form */}
+      <div className="space-y-8">
         <Card>
           <CardHeader>
             <CardTitle>Find Your Flight</CardTitle>
-            <CardDescription>Search for available flights</CardDescription>
+            <CardDescription>
+              Search for flights by origin, destination, and date
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <Button 
-                  variant={searchParams.flightType === "oneWay" ? "default" : "outline"}
-                  className="flex-1"
-                  onClick={() => setSearchParams(prev => ({ ...prev, flightType: "oneWay" }))}
-                >
-                  One Way
-                </Button>
-                <Button 
-                  variant={searchParams.flightType === "roundTrip" ? "default" : "outline"}
-                  className="flex-1"
-                  onClick={() => setSearchParams(prev => ({ ...prev, flightType: "roundTrip" }))}
-                  disabled={true} // Disabled for simplicity
-                >
-                  Round Trip
-                </Button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <div className="md:col-span-5 space-y-2">
-                  <Label htmlFor="origin">From</Label>
-                  <div className="relative">
-                    <Map className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="origin"
-                      placeholder="Origin city or airport"
-                      className="pl-8"
-                      value={searchParams.origin}
-                      onChange={(e) => setSearchParams(prev => ({ ...prev, origin: e.target.value }))}
-                    />
-                  </div>
-                </div>
-                
-                <div className="md:col-span-2 flex items-end justify-center">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={swapLocations}
-                    className="h-10 w-10"
-                  >
-                    <ArrowLeftRight className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                <div className="md:col-span-5 space-y-2">
-                  <Label htmlFor="destination">To</Label>
-                  <div className="relative">
-                    <Map className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="destination"
-                      placeholder="Destination city or airport"
-                      className="pl-8"
-                      value={searchParams.destination}
-                      onChange={(e) => setSearchParams(prev => ({ ...prev, destination: e.target.value }))}
-                    />
-                  </div>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="origin">Origin</Label>
+                <Input 
+                  id="origin" 
+                  name="origin"
+                  placeholder="City or airport"
+                  value={searchParams.origin}
+                  onChange={handleInputChange}
+                />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="departureDate">Departure Date</Label>
+                <Label htmlFor="destination">Destination</Label>
+                <Input 
+                  id="destination" 
+                  name="destination"
+                  placeholder="City or airport"
+                  value={searchParams.destination}
+                  onChange={handleInputChange}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="date">Date</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
-                      id="departureDate"
-                      variant="outline"
+                      id="date"
+                      variant={"outline"}
                       className={cn(
                         "w-full justify-start text-left font-normal",
-                        !searchParams.departureDate && "text-muted-foreground"
+                        !searchParams.date && "text-muted-foreground"
                       )}
                     >
-                      <Calendar className="mr-2 h-4 w-4" />
-                      {searchParams.departureDate ? (
-                        format(searchParams.departureDate, "PPP")
-                      ) : (
-                        <span>Pick a date</span>
-                      )}
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {searchParams.date ? format(searchParams.date, "PPP") : <span>Pick a date</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
-                    <CalendarComponent
+                    <Calendar
                       mode="single"
-                      selected={searchParams.departureDate}
-                      onSelect={(date) => setSearchParams(prev => ({ ...prev, departureDate: date }))}
+                      selected={searchParams.date || undefined}
+                      onSelect={(date) => setSearchParams(prev => ({ ...prev, date }))}
                       initialFocus
                     />
                   </PopoverContent>
@@ -212,110 +211,93 @@ const SearchFlights = () => {
             <Button 
               className="w-full"
               onClick={handleSearch}
-              disabled={!searchParams.origin || !searchParams.destination || !searchParams.departureDate}
+              disabled={loading}
             >
-              <Search className="mr-2 h-4 w-4" />
-              <span>Search Flights</span>
+              {loading ? "Searching..." : "Search Flights"}
+              <Search className="ml-2 h-4 w-4" />
             </Button>
           </CardFooter>
         </Card>
-        
-        {/* Search Results */}
-        {hasSearched && (
+
+        {searchPerformed && (
           <Card>
             <CardHeader>
               <CardTitle>Search Results</CardTitle>
               <CardDescription>
-                {searchResults.length} flights found for {searchParams.origin} to {searchParams.destination} on {
-                  searchParams.departureDate ? format(searchParams.departureDate, "PPP") : ""
-                }
+                {flights.length} {flights.length === 1 ? "flight" : "flights"} found
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Filters */}
-              <div className="flex flex-wrap gap-2 mb-4">
-                <Select value={airline} onValueChange={setAirline}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Airline" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Airlines</SelectItem>
-                    {availableAirlines.map((airlineName, index) => (
-                      <SelectItem key={index} value={airlineName}>
-                        {airlineName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="departureTime">Departure Time</SelectItem>
-                    <SelectItem value="duration">Duration</SelectItem>
-                    <SelectItem value="price">Price</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <Button variant="outline" className="ml-auto" onClick={handleSearch}>
-                  <Filter className="mr-2 h-4 w-4" />
-                  <span>Apply Filters</span>
-                </Button>
-              </div>
-              
-              {/* Results List */}
-              {searchResults.length === 0 ? (
+              {flights.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-muted-foreground mb-4">No flights found matching your criteria</p>
-                  <p className="text-sm text-muted-foreground">Try adjusting your search parameters</p>
+                  <Plane className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-4 text-lg font-medium">No flights found</h3>
+                  <p className="text-muted-foreground">
+                    Try adjusting your search criteria
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {searchResults.map((flight) => (
+                  {flights.map(flight => (
                     <Card key={flight.id} className="overflow-hidden">
-                      <div className="flex flex-col sm:flex-row">
-                        <div className="bg-primary/10 p-4 flex flex-col justify-center items-center sm:w-1/4">
-                          <div className="text-2xl font-bold">{flight.flightNumber}</div>
-                          <div className="text-sm text-muted-foreground">{flight.airline}</div>
-                          <Badge 
-                            className={getStatusBadgeClass(flight.status)}
-                            variant="secondary"
-                          >
-                            {flight.status.charAt(0).toUpperCase() + flight.status.slice(1)}
-                          </Badge>
-                        </div>
-                        <div className="p-4 flex-1">
-                          <div className="flex justify-between mb-2">
+                      <div className="flex flex-col md:flex-row">
+                        <div className="p-6 flex-1">
+                          <div className="flex justify-between items-start">
                             <div>
-                              <div className="font-semibold">{flight.origin}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {new Date(flight.departureTime).toLocaleString()}
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <ArrowRight className="mx-auto h-4 w-4 text-muted-foreground" />
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {getFlightDuration(flight)}
-                              </div>
+                              <h3 className="text-lg font-bold">{flight.airline_name || "Airline"}</h3>
+                              <p className="text-sm text-muted-foreground">Flight {flight.flight_number}</p>
                             </div>
                             <div className="text-right">
-                              <div className="font-semibold">{flight.destination}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {new Date(flight.arrivalTime).toLocaleString()}
-                              </div>
+                              <p className="font-medium">${flight.price.toFixed(2)}</p>
+                              <p className="text-xs text-muted-foreground">per person</p>
                             </div>
                           </div>
-                          <div className="flex justify-between items-center mt-4">
+                          
+                          <div className="mt-4 flex items-center justify-between">
                             <div>
-                              <div className="text-sm text-muted-foreground">Estimated Price</div>
-                              <div className="font-semibold">$299.99</div>
+                              <p className="font-medium">{flight.origin}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(flight.departure_time).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
                             </div>
-                            <Button 
-                              onClick={() => navigate(`/passenger/flight-details/${flight.id}`)}
-                            >
-                              View Details
+                            
+                            <div className="flex-1 mx-4">
+                              <div className="relative">
+                                <div className="absolute inset-0 flex items-center">
+                                  <div className="w-full border-t border-gray-300"></div>
+                                </div>
+                                <div className="relative flex justify-center">
+                                  <Plane className="bg-background px-2 text-primary" size={20} />
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="text-right">
+                              <p className="font-medium">{flight.destination}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(flight.arrival_time).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-4 flex items-center justify-between">
+                            <div className="space-y-1">
+                              <p className="text-sm">
+                                <span className="font-medium">Gate:</span> {flight.gate_number || "TBA"}
+                              </p>
+                              <p className="text-sm">
+                                <span className="font-medium">Status:</span> <span className="capitalize">{flight.status}</span>
+                              </p>
+                            </div>
+                            
+                            <Button onClick={() => handleSelectFlight(flight)}>
+                              Select Flight
                             </Button>
                           </div>
                         </div>
@@ -328,37 +310,49 @@ const SearchFlights = () => {
           </Card>
         )}
       </div>
+
+      <Dialog open={isReservationOpen} onOpenChange={setIsReservationOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Select Your Seat</DialogTitle>
+            <DialogDescription>
+              {selectedFlight && (
+                <div className="mt-2">
+                  <p>Flight: {selectedFlight.flight_number}</p>
+                  <p>{selectedFlight.origin} to {selectedFlight.destination}</p>
+                  <p>
+                    {new Date(selectedFlight.departure_time).toLocaleDateString()} at {' '}
+                    {new Date(selectedFlight.departure_time).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <SeatMap 
+              flight={selectedFlight || undefined}
+              onSeatSelect={handleSeatSelect}
+              selectedSeat={selectedSeat}
+            />
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsReservationOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={handleReservation}
+              disabled={!selectedSeat || reservationLoading}
+            >
+              {reservationLoading ? "Processing..." : "Confirm Reservation"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageLayout>
   );
 };
-
-// Helper functions
-function getFlightDuration(flight: Flight): string {
-  const departure = new Date(flight.departureTime);
-  const arrival = new Date(flight.arrivalTime);
-  const durationMs = arrival.getTime() - departure.getTime();
-  const hours = Math.floor(durationMs / (1000 * 60 * 60));
-  const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-  return `${hours}h ${minutes}m`;
-}
-
-function getStatusBadgeClass(status: string): string {
-  switch (status) {
-    case "scheduled":
-      return "bg-blue-500";
-    case "boarding":
-      return "bg-yellow-500";
-    case "departed":
-      return "bg-purple-500";
-    case "arrived":
-      return "bg-green-500";
-    case "delayed":
-      return "bg-orange-500";
-    case "cancelled":
-      return "bg-red-500";
-    default:
-      return "bg-gray-500";
-  }
-}
 
 export default SearchFlights;

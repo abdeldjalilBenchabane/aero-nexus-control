@@ -93,7 +93,7 @@ export const runwayApi = {
 export const notificationApi = {
   getAll: () => apiFetch<Notification[]>("/notifications"),
   getForUser: (userId: string) => apiFetch<Notification[]>(`/notifications/user/${userId}`),
-  create: (notification: { title: string, message: string, target_role: string, flight_id?: string }) => 
+  create: (notification: { title: string, message: string, target_role: string, flight_id?: string, user_id?: string }) => 
     apiFetch<Notification>("/notifications", "POST", notification),
   delete: (id: string) => apiFetch<void>(`/notifications/${id}`, "DELETE"),
 };
@@ -104,9 +104,9 @@ export const reservationApi = {
   getById: (id: string) => apiFetch<Reservation>(`/reservations/${id}`),
   getForUser: (userId: string) => apiFetch<Reservation[]>(`/reservations/user/${userId}`),
   getForFlight: (flightId: string) => apiFetch<Reservation[]>(`/reservations/flight/${flightId}`),
-  create: (reservation: { flight_id: string, user_id: string, seat_number: string }) => 
+  create: (reservation: { flight_id: string, user_id: string, seat_id: string }) => 
     apiFetch<{ success: boolean, reservation: Reservation }>("/reservations", "POST", reservation),
-  cancel: (id: string) => apiFetch<Reservation>(`/reservations/${id}/cancel`, "PUT"),
+  cancel: (id: string) => apiFetch<{ success: boolean }>(`/reservations/${id}/cancel`, "PUT"),
 };
 
 // Airlines API
@@ -134,4 +134,7 @@ export const airplaneApi = {
 export const seatApi = {
   getByFlight: (flightId: string) => apiFetch<Seat[]>(`/flights/${flightId}/seats`),
   getAvailable: (flightId: string) => apiFetch<Seat[]>(`/flights/${flightId}/seats/available`),
+  getById: (seatId: string) => apiFetch<Seat>(`/seats/${seatId}`),
+  getBySeatNumber: (flightId: string, seatNumber: string) => 
+    apiFetch<Seat>(`/flights/${flightId}/seats/${seatNumber}`),
 };

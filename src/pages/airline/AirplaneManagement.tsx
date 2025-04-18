@@ -41,7 +41,8 @@ const AirplaneManagement = () => {
     try {
       setLoading(true);
       // Fetch airplanes for the current airline
-      const data = await airplaneApi.getByAirline(user!.id);
+      const airlineId = user?.airline_id || user?.id;
+      const data = await airplaneApi.getByAirline(airlineId!);
       setAirplanes(data);
     } catch (error) {
       console.error("Error fetching airplanes:", error);
@@ -84,9 +85,11 @@ const AirplaneManagement = () => {
         return;
       }
 
+      const airlineId = user?.airline_id || user?.id;
+      
       await airplaneApi.create({
         name: formData.name,
-        airline_id: user!.id,
+        airline_id: airlineId!,
         capacity: formData.capacity
       });
 
@@ -229,7 +232,9 @@ const AirplaneManagement = () => {
                     <TableCell>{airplane.id}</TableCell>
                     <TableCell>{airplane.name}</TableCell>
                     <TableCell>{airplane.capacity} seats</TableCell>
-                    <TableCell>{new Date(airplane.created_at || '').toLocaleString()}</TableCell>
+                    <TableCell>
+                      {airplane.created_at ? new Date(airplane.created_at).toLocaleString() : "—"}
+                    </TableCell>
                     <TableCell className="text-right">
                       <Button 
                         variant="ghost" 

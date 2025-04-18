@@ -89,7 +89,7 @@ export interface Flight {
   gate?: string;
   runway?: string;
   availableSeats?: string[];
-  bookedSeats?: { seatId: string }[];
+  bookedSeats?: { seatId: string }[] | string[];
 }
 
 export interface Reservation {
@@ -97,6 +97,7 @@ export interface Reservation {
   user_id: string;
   flight_id: string;
   seat_number: string;
+  seat_id?: string;
   status?: "confirmed" | "cancelled" | "checked-in";
   reservation_time?: string;
   created_at?: string;
@@ -110,7 +111,6 @@ export interface Reservation {
   flightId?: string;
   seat?: string;
   seatId?: string;
-  seat_id?: string;
   timestamp?: string;
 }
 

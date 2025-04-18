@@ -1,20 +1,21 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Flight, Seat } from "@/lib/types";
-import { flights } from "@/lib/db";
+import { seatApi } from "@/lib/api";
 
 interface SeatMapProps {
   flight?: Flight;
   onSelectSeat?: (seatId: string) => void;
-  onSeatSelect?: (seatId: string) => void;
+  onSeatSelect?: (seatNumber: string) => void;
   selectedSeat?: string;
   className?: string;
   reservedSeats?: string[];
 }
 
 const ROWS = ["A", "B", "C", "D", "E", "F"];
-const COLUMNS = [1, 2, 3];
+const COLUMNS = [1, 2, 3, 4, 5, 6];
 
 const SeatMap = ({ 
   flight, 
@@ -24,73 +25,114 @@ const SeatMap = ({
   className,
   reservedSeats = []
 }: SeatMapProps) => {
-  const [availableSeats, setAvailableSeats] = useState<string[]>([]);
-  const [bookedSeats, setBookedSeats] = useState<string[]>([]);
+  const [availableSeats, setAvailableSeats] = useState<Seat[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
-    if (flight) {
-      // Use custom property or generate a list of all possible seats
-      if (flight.availableSeats && Array.isArray(flight.availableSeats)) {
-        setAvailableSeats(flight.availableSeats);
-      } else {
-        // Create a list of all possible seats
-        const allSeats: string[] = [];
+    if (flight?.id) {
+      fetchSeats(flight.id);
+    }
+  }, [flight]);
+
+  const fetchSeats = async (flightId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const seats = await seatApi.getByFlight(flightId);
+      setAvailableSeats(seats);
+    } catch (err) {
+      console.error("Error fetching seats:", err);
+      setError("Failed to load seats for this flight");
+      
+      // Fallback for demo if API fails
+      if (flight?.availableSeats || reservedSeats.length > 0) {
+        const allSeatNumbers: string[] = [];
         ROWS.forEach(row => {
           COLUMNS.forEach(col => {
-            allSeats.push(`${row}${col}`);
+            allSeatNumbers.push(`${row}${col}`);
           });
         });
-        setAvailableSeats(allSeats);
+        
+        const mockSeats: Seat[] = allSeatNumbers.map(seatNumber => ({
+          id: `seat-${seatNumber}`,
+          seat_number: seatNumber,
+          is_available: !reservedSeats.includes(seatNumber),
+          is_reserved: reservedSeats.includes(seatNumber)
+        }));
+        
+        setAvailableSeats(mockSeats);
       }
-      
-      if (flight.bookedSeats && Array.isArray(flight.bookedSeats)) {
-        setBookedSeats(flight.bookedSeats.map(seat => typeof seat === 'string' ? seat : seat.seatId));
-      } else {
-        setBookedSeats([]);
-      }
-    } else if (reservedSeats.length > 0) {
-      // If no flight is provided but reservedSeats are, use those
-      setBookedSeats(reservedSeats);
-      
-      // Create a list of all possible seats
-      const allSeats: string[] = [];
-      ROWS.forEach(row => {
-        COLUMNS.forEach(col => {
-          allSeats.push(`${row}${col}`);
-        });
-      });
-      
-      // Available seats are those not in reservedSeats
-      setAvailableSeats(allSeats.filter(seat => !reservedSeats.includes(seat)));
+    } finally {
+      setLoading(false);
     }
-  }, [flight, reservedSeats]);
-
-  const isSeatAvailable = (seatId: string) => {
-    return availableSeats.includes(seatId);
   };
 
-  const isSeatBooked = (seatId: string) => {
-    return bookedSeats.includes(seatId);
+  const isSeatAvailable = (seatNumber: string) => {
+    const seat = availableSeats.find(s => s.seat_number === seatNumber);
+    return seat && !seat.is_reserved;
   };
 
-  const isSeatSelected = (seatId: string) => {
-    return selectedSeat === seatId;
+  const isSeatBooked = (seatNumber: string) => {
+    const seat = availableSeats.find(s => s.seat_number === seatNumber);
+    return seat?.is_reserved || reservedSeats.includes(seatNumber);
   };
 
-  const getSeatStatus = (seatId: string) => {
-    if (isSeatSelected(seatId)) return "selected";
-    if (isSeatBooked(seatId)) return "booked";
-    if (isSeatAvailable(seatId)) return "available";
+  const isSeatSelected = (seatNumber: string) => {
+    return selectedSeat === seatNumber;
+  };
+
+  const getSeatStatus = (seatNumber: string) => {
+    if (isSeatSelected(seatNumber)) return "selected";
+    if (isSeatBooked(seatNumber)) return "booked";
+    if (isSeatAvailable(seatNumber)) return "available";
     return "unavailable";
   };
 
-  const handleSeatClick = (seatId: string) => {
-    if (onSelectSeat) {
-      onSelectSeat(seatId);
+  const handleSeatClick = (seatNumber: string) => {
+    if (isSeatBooked(seatNumber)) return;
+    
+    const seat = availableSeats.find(s => s.seat_number === seatNumber);
+    
+    if (onSelectSeat && seat) {
+      onSelectSeat(seat.id);
     }
+    
     if (onSeatSelect) {
-      onSeatSelect(seatId);
+      onSeatSelect(seatNumber);
     }
+  };
+  
+  // Create a grid of rows and columns for the seats
+  const renderSeats = () => {
+    const seats: JSX.Element[] = [];
+    
+    ROWS.forEach(row => {
+      COLUMNS.forEach(col => {
+        const seatNumber = `${row}${col}`;
+        const status = getSeatStatus(seatNumber);
+        
+        seats.push(
+          <Button
+            key={seatNumber}
+            className={cn(
+              "w-12 h-12 rounded-md",
+              status === "available" && "bg-white text-foreground hover:bg-primary/20 border border-gray-300",
+              status === "booked" && "bg-gray-300 cursor-not-allowed",
+              status === "selected" && "bg-primary text-primary-foreground",
+              status === "unavailable" && "bg-gray-200 cursor-not-allowed"
+            )}
+            disabled={status === "booked" || status === "unavailable"}
+            onClick={() => handleSeatClick(seatNumber)}
+            variant="ghost"
+          >
+            {seatNumber}
+          </Button>
+        );
+      });
+    });
+    
+    return seats;
   };
 
   return (
@@ -112,36 +154,21 @@ const SeatMap = ({
         </div>
       </div>
 
-      <div className="flex justify-center">
-        <div className="grid grid-cols-3 gap-6 p-4 border rounded-md bg-muted/20">
-          {ROWS.map(row => (
-            <div key={row} className="flex flex-col items-center space-y-4">
-              {COLUMNS.map(col => {
-                const seatId = `${row}${col}`;
-                const status = getSeatStatus(seatId);
-                
-                return (
-                  <Button
-                    key={seatId}
-                    className={cn(
-                      "w-12 h-12 rounded-md",
-                      status === "available" && "bg-white text-foreground hover:bg-primary/20 border border-gray-300",
-                      status === "booked" && "bg-gray-300 cursor-not-allowed",
-                      status === "selected" && "bg-primary text-primary-foreground",
-                      status === "unavailable" && "bg-gray-200 cursor-not-allowed"
-                    )}
-                    disabled={status === "booked" || status === "unavailable"}
-                    onClick={() => handleSeatClick(seatId)}
-                    variant="ghost"
-                  >
-                    {seatId}
-                  </Button>
-                );
-              })}
-            </div>
-          ))}
+      {loading ? (
+        <div className="flex justify-center items-center h-40">
+          <p>Loading seats...</p>
         </div>
-      </div>
+      ) : error ? (
+        <div className="flex justify-center items-center h-40">
+          <p className="text-destructive">{error}</p>
+        </div>
+      ) : (
+        <div className="flex justify-center">
+          <div className="grid grid-cols-6 gap-3 p-4 border rounded-md bg-muted/20">
+            {renderSeats()}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
