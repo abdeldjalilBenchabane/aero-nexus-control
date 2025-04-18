@@ -144,7 +144,7 @@ const RealTimeFlights = () => {
       case "in_air": return "default";
       case "landed": return "default";
       case "arrived": return "success";
-      case "delayed": return "warning";
+      case "delayed": return "destructive"; // Changed from "warning" to "destructive"
       case "cancelled": return "destructive";
       default: return "outline";
     }

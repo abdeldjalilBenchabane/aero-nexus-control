@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Flight, Airline, Airplane, Gate, Runway } from "@/lib/types";
+import { Flight, Airline, Airplane, Gate, Runway, FlightStatus } from "@/lib/types";
 import { flightApi, airlineApi, airplaneApi, gateApi, runwayApi } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,7 @@ type FlightFormValues = {
   destination: string;
   departure_time: string;
   arrival_time: string;
-  status: string;
+  status: FlightStatus; // Changed from string to FlightStatus
   gate_id: string;
   runway_id: string;
   price: number;
@@ -171,14 +172,14 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
       
       if (editMode && initialData?.id) {
         // Update existing flight
-        result = await flightApi.update(initialData.id, data);
+        result = await flightApi.update(initialData.id, data as Partial<Flight>);
         toast({
           title: "Success",
           description: "Flight updated successfully"
         });
       } else {
         // Create new flight
-        result = await flightApi.create(data);
+        result = await flightApi.create(data as Omit<Flight, "id">);
         form.reset();
         toast({
           title: "Success",
@@ -336,7 +337,10 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
                   <FormItem>
                     <FormLabel>Status</FormLabel>
                     <FormControl>
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select 
+                        value={field.value} 
+                        onValueChange={(value: FlightStatus) => field.onChange(value)}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
@@ -344,6 +348,8 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
                           <SelectItem value="scheduled">Scheduled</SelectItem>
                           <SelectItem value="boarding">Boarding</SelectItem>
                           <SelectItem value="departed">Departed</SelectItem>
+                          <SelectItem value="in_air">In Air</SelectItem>
+                          <SelectItem value="landed">Landed</SelectItem>
                           <SelectItem value="arrived">Arrived</SelectItem>
                           <SelectItem value="delayed">Delayed</SelectItem>
                           <SelectItem value="cancelled">Cancelled</SelectItem>

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Flight } from "@/lib/types";
 import { flights } from "@/lib/db";
@@ -36,6 +37,7 @@ interface FlightTableProps {
   onEdit?: (flight: Flight) => void;
   onDelete?: (flight: Flight) => void;
   emptyMessage?: string;
+  loading?: boolean; // Add the loading prop
 }
 
 const FlightTable = ({
@@ -48,7 +50,8 @@ const FlightTable = ({
   onSelect,
   onEdit,
   onDelete,
-  emptyMessage = "No flights available"
+  emptyMessage = "No flights available",
+  loading = false // Add default value
 }: FlightTableProps) => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
