@@ -17,6 +17,8 @@ import Test from "./pages/Test";
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
 import ManageUsers from "./pages/admin/ManageUsers";
+import ManageGates from "./pages/admin/ManageGates";
+import ManageRunways from "./pages/admin/ManageRunways";
 import Reports from "./pages/admin/Reports";
 import SystemSettings from "./pages/admin/SystemSettings";
 import AdminSendNotification from "./pages/admin/SendNotification";
@@ -24,13 +26,14 @@ import AdminSendNotification from "./pages/admin/SendNotification";
 // Staff pages
 import StaffDashboard from "./pages/staff/Dashboard";
 import ManageFlights from "./pages/staff/ManageFlights";
-import AssignGateRunway from "./pages/staff/AssignGateRunway";
 import RealTimeFlights from "./pages/staff/RealTimeFlights";
 import StaffSendNotification from "./pages/staff/SendNotification";
 
 // Airline pages
 import AirlineDashboard from "./pages/airline/Dashboard";
 import MyFlights from "./pages/airline/MyFlights";
+import AirplaneManagement from "./pages/airline/AirplaneManagement";
+import AirlineNotifications from "./pages/airline/Notifications";
 import DelayManager from "./pages/airline/DelayManager";
 import PassengerNotify from "./pages/airline/PassengerNotify";
 
@@ -71,12 +74,12 @@ const App = () => (
             } />
             <Route path="/admin/gates" element={
               <ProtectedRoute allowedRoles={["admin"]}>
-                <NotFound />
+                <ManageGates />
               </ProtectedRoute>
             } />
             <Route path="/admin/runways" element={
               <ProtectedRoute allowedRoles={["admin"]}>
-                <NotFound />
+                <ManageRunways />
               </ProtectedRoute>
             } />
             <Route path="/admin/reports" element={
@@ -106,11 +109,6 @@ const App = () => (
                 <ManageFlights />
               </ProtectedRoute>
             } />
-            <Route path="/staff/assign-gate-runway" element={
-              <ProtectedRoute allowedRoles={["staff"]}>
-                <AssignGateRunway />
-              </ProtectedRoute>
-            } />
             <Route path="/staff/real-time-flights" element={
               <ProtectedRoute allowedRoles={["staff"]}>
                 <RealTimeFlights />
@@ -131,6 +129,16 @@ const App = () => (
             <Route path="/airline/flights" element={
               <ProtectedRoute allowedRoles={["airline"]}>
                 <MyFlights />
+              </ProtectedRoute>
+            } />
+            <Route path="/airline/airplanes" element={
+              <ProtectedRoute allowedRoles={["airline"]}>
+                <AirplaneManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/airline/notifications" element={
+              <ProtectedRoute allowedRoles={["airline"]}>
+                <AirlineNotifications />
               </ProtectedRoute>
             } />
             <Route path="/airline/delay-manager" element={

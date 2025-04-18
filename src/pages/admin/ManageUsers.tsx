@@ -5,9 +5,7 @@ import {
   Pencil, 
   Trash2, 
   Shield, 
-  UserCog, 
-  UserPlus, 
-  Search
+  UserCog 
 } from "lucide-react";
 import PageLayout from "@/components/PageLayout";
 import { Input } from "@/components/ui/input";
@@ -30,11 +28,10 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { users as mockUsers } from "@/lib/db";
+import { userApi } from "@/lib/api";
 import type { User } from "@/lib/types";
 import { useToast } from "@/components/ui/use-toast";
 
-// Type helper for user role
 type UserRole = "admin" | "staff" | "airline" | "passenger";
 
 const ManageUsers = () => {
@@ -46,36 +43,31 @@ const ManageUsers = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [newUser, setNewUser] = useState({
     name: "",
-    username: "",
-    password: "", // Only used for new users
-    firstName: "",
-    lastName: "",
     email: "",
+    password: "",
     role: "passenger" as UserRole
   });
   const { toast } = useToast();
 
   // Fetch users on component mount
   useEffect(() => {
-    // In a real app, this would fetch from API
-    fetch("http://localhost:3001/api/users")
-      .then(response => response.json())
-      .then(data => {
-        // Ensure data has the correct role type
-        const typedUsers = data.map((user: any) => ({
-          ...user,
-          role: user.role as UserRole
-        }));
-        setUsers(typedUsers);
-        setFilteredUsers(typedUsers);
-      })
-      .catch(error => {
-        console.error("Error fetching users:", error);
-        // Fallback to mock data
-        setUsers(mockUsers);
-        setFilteredUsers(mockUsers);
-      });
+    fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const data = await userApi.getAll();
+      setUsers(data);
+      setFilteredUsers(data);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load users",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Handle search
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,9 +79,6 @@ const ManageUsers = () => {
     } else {
       const filtered = users.filter(user => 
         user.name.toLowerCase().includes(term) ||
-        (user.username?.toLowerCase().includes(term) || false) ||
-        (user.firstName?.toLowerCase().includes(term) || false) ||
-        (user.lastName?.toLowerCase().includes(term) || false) ||
         user.email.toLowerCase().includes(term) ||
         user.role.toLowerCase().includes(term)
       );
@@ -109,7 +98,7 @@ const ManageUsers = () => {
   };
 
   // Add new user
-  const handleAddUser = () => {
+  const handleAddUser = async () => {
     // Validate input
     if (!newUser.name || !newUser.password || !newUser.email) {
       toast({
@@ -120,71 +109,32 @@ const ManageUsers = () => {
       return;
     }
 
-    // In a real application, this would make an API call
-    fetch("http://localhost:3001/api/users", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(newUser),
-    })
-      .then(response => response.json())
-      .then(data => {
-        // Add the new user to the state with proper typing
-        const typedUser: User = {
-          ...data,
-          role: data.role as UserRole
-        };
-        const updatedUsers = [...users, typedUser];
-        setUsers(updatedUsers);
-        setFilteredUsers(updatedUsers);
-        
-        toast({
-          title: "Success",
-          description: "User created successfully",
-        });
-        
-        setIsAddUserOpen(false);
-        setNewUser({
-          name: "",
-          username: "",
-          password: "",
-          firstName: "",
-          lastName: "",
-          email: "",
-          role: "passenger" as UserRole
-        });
-      })
-      .catch(error => {
-        console.error("Error adding user:", error);
-        
-        // Fallback if API fails - just add to local state
-        const newUserData: User = {
-          ...newUser,
-          id: `user${Date.now()}`,
-          role: newUser.role
-        };
-        
-        const updatedUsers = [...users, newUserData];
-        setUsers(updatedUsers);
-        setFilteredUsers(updatedUsers);
-        
-        toast({
-          title: "Success",
-          description: "User created successfully",
-        });
-        
-        setIsAddUserOpen(false);
-        setNewUser({
-          name: "",
-          username: "",
-          password: "",
-          firstName: "",
-          lastName: "",
-          email: "",
-          role: "passenger" as UserRole
-        });
+    try {
+      const created = await userApi.create(newUser);
+      const updatedUsers = [...users, created];
+      setUsers(updatedUsers);
+      setFilteredUsers(updatedUsers);
+      
+      toast({
+        title: "Success",
+        description: "User created successfully",
       });
+      
+      setIsAddUserOpen(false);
+      setNewUser({
+        name: "",
+        email: "",
+        password: "",
+        role: "passenger" as UserRole
+      });
+    } catch (error) {
+      console.error("Error adding user:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create user. Email may already be in use.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Edit user
@@ -193,18 +143,15 @@ const ManageUsers = () => {
     setSelectedUser(user);
     setNewUser({
       name: user.name,
-      username: user.username || "",
-      password: "", // We don't show or edit existing passwords
-      firstName: user.firstName || "",
-      lastName: user.lastName || "",
       email: user.email,
+      password: "", // We don't show or edit existing passwords
       role: user.role
     });
     setIsAddUserOpen(true);
   };
 
   // Update user
-  const handleUpdateUser = () => {
+  const handleUpdateUser = async () => {
     if (!selectedUser) return;
 
     // Validate input
@@ -226,87 +173,57 @@ const ManageUsers = () => {
       delete updateData.password;
     }
 
-    // In a real application, this would make an API call
-    fetch(`http://localhost:3001/api/users/${selectedUser.id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(updateData),
-    })
-      .then(response => response.json())
-      .then(data => {
-        // Update the user in the state with proper typing
-        const typedData = {
-          ...data,
-          role: data.role as UserRole
-        };
-        const updatedUsers = users.map(u => 
-          u.id === selectedUser.id ? { ...u, ...typedData } : u
-        );
-        setUsers(updatedUsers);
-        setFilteredUsers(updatedUsers);
-        
-        toast({
-          title: "Success",
-          description: "User updated successfully",
-        });
-        
-        setIsAddUserOpen(false);
-        setIsEditMode(false);
-        setSelectedUser(null);
-      })
-      .catch(error => {
-        console.error("Error updating user:", error);
-        
-        // Fallback if API fails - just update local state
-        const updatedUsers = users.map(u => 
-          u.id === selectedUser.id ? { ...u, ...updateData, role: updateData.role as UserRole } : u
-        );
-        setUsers(updatedUsers);
-        setFilteredUsers(updatedUsers);
-        
-        toast({
-          title: "Success",
-          description: "User updated successfully",
-        });
-        
-        setIsAddUserOpen(false);
-        setIsEditMode(false);
-        setSelectedUser(null);
+    try {
+      const updated = await userApi.update(selectedUser.id, updateData);
+      const updatedUsers = users.map(u => 
+        u.id === selectedUser.id ? { ...u, ...updated } : u
+      );
+      setUsers(updatedUsers);
+      setFilteredUsers(updatedUsers);
+      
+      toast({
+        title: "Success",
+        description: "User updated successfully",
       });
+      
+      setIsAddUserOpen(false);
+      setIsEditMode(false);
+      setSelectedUser(null);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update user",
+        variant: "destructive"
+      });
+    }
   };
 
   // Delete user
-  const handleDeleteUser = (user: User) => {
-    // In a real application, this would make an API call
-    fetch(`http://localhost:3001/api/users/${user.id}`, {
-      method: "DELETE",
-    })
-      .then(() => {
-        // Remove the user from the state
-        const updatedUsers = users.filter(u => u.id !== user.id);
-        setUsers(updatedUsers);
-        setFilteredUsers(updatedUsers);
-        
-        toast({
-          title: "Success",
-          description: "User deleted successfully",
-        });
-      })
-      .catch(error => {
-        console.error("Error deleting user:", error);
-        
-        // Fallback if API fails - just remove from local state
-        const updatedUsers = users.filter(u => u.id !== user.id);
-        setUsers(updatedUsers);
-        setFilteredUsers(updatedUsers);
-        
-        toast({
-          title: "Success",
-          description: "User deleted successfully",
-        });
+  const handleDeleteUser = async (user: User) => {
+    if (!window.confirm(`Are you sure you want to delete user ${user.name}?`)) {
+      return;
+    }
+
+    try {
+      await userApi.delete(user.id);
+      
+      const updatedUsers = users.filter(u => u.id !== user.id);
+      setUsers(updatedUsers);
+      setFilteredUsers(updatedUsers);
+      
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
       });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete user",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -315,12 +232,11 @@ const ManageUsers = () => {
         {/* Search and Add User */}
         <div className="flex flex-col sm:flex-row justify-between gap-4">
           <div className="relative max-w-md">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search users..."
               value={searchTerm}
               onChange={handleSearch}
-              className="pl-8 max-w-sm"
+              className="max-w-sm"
             />
           </div>
           
@@ -333,11 +249,8 @@ const ManageUsers = () => {
                 setSelectedUser(null);
                 setNewUser({
                   name: "",
-                  username: "",
-                  password: "",
-                  firstName: "",
-                  lastName: "",
                   email: "",
+                  password: "",
                   role: "passenger" as UserRole
                 });
               }
@@ -345,7 +258,7 @@ const ManageUsers = () => {
           >
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2">
-                <UserPlus size={16} />
+                <PlusCircle size={16} />
                 <span>Add User</span>
               </Button>
             </DialogTrigger>
@@ -370,17 +283,6 @@ const ManageUsers = () => {
                     onChange={handleInputChange}
                   />
                 </div>
-
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="username" className="text-right">Username</Label>
-                  <Input 
-                    id="username" 
-                    name="username"
-                    className="col-span-3" 
-                    value={newUser.username}
-                    onChange={handleInputChange}
-                  />
-                </div>
                 
                 {!isEditMode && (
                   <div className="grid grid-cols-4 items-center gap-4">
@@ -395,28 +297,6 @@ const ManageUsers = () => {
                     />
                   </div>
                 )}
-                
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="firstName" className="text-right">First Name</Label>
-                  <Input 
-                    id="firstName" 
-                    name="firstName"
-                    className="col-span-3" 
-                    value={newUser.firstName}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="lastName" className="text-right">Last Name</Label>
-                  <Input 
-                    id="lastName" 
-                    name="lastName"
-                    className="col-span-3" 
-                    value={newUser.lastName}
-                    onChange={handleInputChange}
-                  />
-                </div>
                 
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="email" className="text-right">Email</Label>
@@ -461,25 +341,26 @@ const ManageUsers = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>ID</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Username</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Created At</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     No users found.
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredUsers.map(user => (
                   <TableRow key={user.id}>
-                    <TableCell>{user.firstName} {user.lastName}</TableCell>
-                    <TableCell>{user.username || user.name}</TableCell>
+                    <TableCell>{user.id}</TableCell>
+                    <TableCell>{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -488,6 +369,7 @@ const ManageUsers = () => {
                         <span className="capitalize">{user.role}</span>
                       </div>
                     </TableCell>
+                    <TableCell>{new Date(user.created_at || '').toLocaleString()}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="icon" onClick={() => handleEditUser(user)}>

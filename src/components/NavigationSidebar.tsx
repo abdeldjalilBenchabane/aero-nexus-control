@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,14 +13,11 @@ import {
   Bell,
   PlaneTakeoff,
   Compass,
-  CalendarCheck,
+  Search,
   ClipboardList,
-  MapPin,
-  LucideProps,
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Search,
   Ticket,
   Building2,
   Plane,
@@ -95,9 +93,8 @@ const NavigationSidebar = ({ activePath }: NavigationSidebarProps) => {
   const staffNav = [
     { path: "/staff/dashboard", label: "Dashboard", icon: <LayoutDashboard size={18} /> },
     { path: "/staff/flights", label: "Manage Flights", icon: <PlaneTakeoff size={18} /> },
-    { path: "/staff/assign-gate-runway", label: "Gates & Runways", icon: <MapPin size={18} /> },
-    { path: "/staff/send-notification", label: "Send Notification", icon: <Bell size={18} /> },
     { path: "/staff/real-time-flights", label: "Live Flights", icon: <Compass size={18} /> },
+    { path: "/staff/send-notification", label: "Send Notification", icon: <Bell size={18} /> },
   ];
 
   const airlineNav = [
@@ -112,7 +109,6 @@ const NavigationSidebar = ({ activePath }: NavigationSidebarProps) => {
     { path: "/passenger/search-flights", label: "Search Flights", icon: <Search size={18} /> },
     { path: "/passenger/my-reservations", label: "My Reservations", icon: <Ticket size={18} /> },
     { path: "/passenger/my-notifications", label: "Notifications", icon: <Bell size={18} /> },
-    { path: "/passenger/flight-status", label: "Flight Status", icon: <GanttChartSquare size={18} /> },
   ];
 
   let navItems: { path: string; label: string; icon: React.ReactNode }[] = [];
@@ -141,9 +137,6 @@ const NavigationSidebar = ({ activePath }: NavigationSidebarProps) => {
 
   const getUserDisplayName = () => {
     if (!user) return "";
-    if (user.firstName && user.lastName) {
-      return `${user.firstName} ${user.lastName}`;
-    }
     return user.name || "User";
   };
 

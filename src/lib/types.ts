@@ -6,16 +6,21 @@ export interface User {
   password?: string;
   role: "admin" | "staff" | "passenger" | "airline";
   created_at?: string;
-  firstName?: string;
-  lastName?: string;
-  airlineId?: string;
-  username?: string; // Added to support ManageUsers.tsx
 }
 
-export interface AirlineProfile {
+export interface Airline {
   id: string;
-  user_id: string;
-  company_name: string;
+  name: string;
+  email: string;
+  created_at?: string;
+}
+
+export interface Airplane {
+  id: string;
+  name: string;
+  airline_id: string;
+  capacity: number;
+  created_at?: string;
 }
 
 export interface Gate {
@@ -24,7 +29,7 @@ export interface Gate {
   name?: string;
   terminal?: string;
   isAvailable?: boolean;
-  scheduledFlights?: number;
+  created_at?: string;
 }
 
 export interface Runway {
@@ -32,75 +37,63 @@ export interface Runway {
   runway_number: string;
   name?: string;
   isAvailable?: boolean;
-}
-
-export interface Flight {
-  id: string;
-  flight_number: string;
-  airline_id?: string;  // Add airline_id as a property
-  airline?: string; // For backward compatibility
-  airline_name?: string; // Joined field
-  gate_id?: string;
-  gate_number?: string; // Joined field
-  runway_id?: string;
-  runway_number?: string; // Joined field
-  departure_time: string;
-  arrival_time: string;
-  origin?: string; // Add this field to support components using it
-  destination: string;
-  status: "scheduled" | "delayed" | "cancelled" | "landed" | "in_air" | "boarding" | "departed" | "arrived";
-  price: number;
-  flightNumber?: string; // For backward compatibility
-  departureTime?: string; // For backward compatibility
-  arrivalTime?: string; // For backward compatibility
-  gate?: string; // For backward compatibility
-  runway?: string; // For backward compatibility
-  availableSeats?: string[]; // For backward compatibility
-  bookedSeats?: Array<{seatId: string; passengerId?: string}>; // For backward compatibility
+  created_at?: string;
 }
 
 export interface Seat {
   id: string;
-  flight_id: string;
+  flight_id?: string;
+  airplane_id?: string;
   seat_number: string;
-  is_reserved: boolean;
+  is_reserved?: boolean;
+  is_available?: boolean;
+}
+
+export type FlightStatus = "scheduled" | "boarding" | "departed" | "arrived" | "delayed" | "cancelled";
+
+export interface Flight {
+  id: string;
+  flight_number: string;
+  airline_id: string;
+  airline_name?: string;
+  airplane_id?: string;
+  gate_id?: string;
+  gate_number?: string;
+  runway_id?: string;
+  runway_number?: string;
+  origin: string;
+  destination: string;
+  departure_time: string;
+  arrival_time: string;
+  status: FlightStatus;
+  price: number;
+  created_at?: string;
 }
 
 export interface Reservation {
   id: string;
   user_id: string;
   flight_id: string;
-  seat_id: string;
-  seat_number?: string; // Joined field
-  flight_number?: string; // Joined field
-  destination?: string; // Joined field
-  departure_time?: string; // Joined field
-  arrival_time?: string; // Joined field
-  reservation_time: string;
-  // Add these legacy fields for backward compatibility
-  userId?: string;
-  flightId?: string;
-  timestamp?: string;
-  seat?: string;
+  seat_number: string;
+  status?: "confirmed" | "cancelled" | "checked-in";
+  reservation_time?: string;
+  created_at?: string;
+  // Joined fields
+  flight_number?: string;
+  destination?: string;
+  departure_time?: string;
+  arrival_time?: string;
 }
 
 export interface Notification {
   id: string;
   title: string;
   message: string;
-  target_role: "admin" | "staff" | "passenger" | "airline" | "all";
+  user_id?: string;
+  user_role?: "admin" | "staff" | "airline";
+  target_role?: "admin" | "staff" | "passenger" | "airline" | "all";
   flight_id?: string;
   created_at: string;
-  // Add these extra fields for backward compatibility
-  timestamp?: string;
-  sender?: {
-    id: string;
-    role: "admin" | "staff" | "airline";
-  };
-  targetType?: "all" | "role" | "flight";
-  targetId?: string;
-  flightId?: string;
-  senderRole?: string;
 }
 
 // Auth response types
