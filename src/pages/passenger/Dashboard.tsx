@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import PageLayout from "@/components/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -15,33 +14,26 @@ const PassengerDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  // Mock data - in a real app these would come from API calls
   const userId = user?.id || "";
   
-  // Get user's reservations
   const userReservations = reservations.filter(res => res.userId === userId);
   
-  // Get user's flights based on reservations
   const userFlightIds = userReservations.map(res => res.flightId);
   const userFlights = flights.filter(flight => userFlightIds.includes(flight.id));
   
-  // Upcoming and past flights
   const now = new Date();
   const upcomingFlights = userFlights.filter(flight => new Date(flight.departureTime) > now);
   const pastFlights = userFlights.filter(flight => new Date(flight.departureTime) <= now);
   
-  // Notifications for user's flights
   const userNotifications = notifications.filter(
-    notification => notification.flightId && userFlightIds.includes(notification.flightId)
-  ).slice(0, 5); // Show only 5 most recent
-
-  // Check for any delayed or cancelled flights
+    notification => notification.flight_id && userFlightIds.includes(notification.flight_id)
+  ).slice(0, 5);
+  
   const hasDelayedFlights = userFlights.some(flight => flight.status === 'delayed' || flight.status === 'cancelled');
 
   return (
     <PageLayout title="Passenger Dashboard">
       <div className="space-y-6">
-        {/* Alert for delayed/cancelled flights */}
         {hasDelayedFlights && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
@@ -52,9 +44,7 @@ const PassengerDashboard = () => {
           </Alert>
         )}
         
-        {/* Main content */}
         <div className="grid gap-6 md:grid-cols-2">
-          {/* Upcoming Flights */}
           <Card className="md:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -137,7 +127,6 @@ const PassengerDashboard = () => {
             )}
           </Card>
           
-          {/* Recent Notifications */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -156,7 +145,7 @@ const PassengerDashboard = () => {
               ) : (
                 <div className="space-y-4">
                   {userNotifications.map((notification, index) => {
-                    const relatedFlight = flights.find(f => f.id === notification.flightId);
+                    const relatedFlight = flights.find(f => f.id === notification.flight_id);
                     
                     return (
                       <Alert key={index} className="bg-muted">
@@ -165,15 +154,15 @@ const PassengerDashboard = () => {
                             <AlertTitle className="flex items-center gap-2">
                               {relatedFlight && (
                                 <Badge variant="outline" className="font-normal">
-                                  {relatedFlight.flightNumber}
+                                  {relatedFlight.flight_number}
                                 </Badge>
                               )}
                               <span>
-                                {notification.senderRole.charAt(0).toUpperCase() + notification.senderRole.slice(1)} Message
+                                {notification.user_role ? (notification.user_role.charAt(0).toUpperCase() + notification.user_role.slice(1)) : 'System'} Message
                               </span>
                             </AlertTitle>
                             <span className="text-xs text-muted-foreground">
-                              {new Date(notification.timestamp).toLocaleString()}
+                              {new Date(notification.created_at || notification.timestamp || '').toLocaleString()}
                             </span>
                           </div>
                           <AlertDescription>
@@ -197,7 +186,6 @@ const PassengerDashboard = () => {
             </CardFooter>
           </Card>
           
-          {/* Quick Actions */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -243,7 +231,6 @@ const PassengerDashboard = () => {
   );
 };
 
-// Helper functions
 function getFlightDuration(flight: Flight): string {
   const departure = new Date(flight.departureTime);
   const arrival = new Date(flight.arrivalTime);

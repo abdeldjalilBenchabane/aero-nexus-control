@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import PageLayout from "@/components/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -73,7 +72,7 @@ const RealTimeFlights = () => {
   };
 
   const updateFlightStatus = (flight: Flight, newStatus: Flight["status"]) => {
-    console.log(`Updating flight ${flight.flightNumber} status to ${newStatus}`);
+    console.log(`Updating flight ${flight.flight_number} status to ${newStatus}`);
     refreshData();
   };
 
@@ -84,9 +83,7 @@ const RealTimeFlights = () => {
       departed: "arrived",
       arrived: "arrived",
       delayed: "scheduled",
-      cancelled: "scheduled",
-      landed: "arrived",
-      in_air: "landed"
+      cancelled: "scheduled"
     };
   }
 
@@ -152,8 +149,6 @@ const RealTimeFlights = () => {
                     <SelectItem value="arrived">Arrived</SelectItem>
                     <SelectItem value="delayed">Delayed</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
-                    <SelectItem value="landed">Landed</SelectItem>
-                    <SelectItem value="in_air">In Air</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -199,9 +194,7 @@ const RealTimeFlights = () => {
                       departed: "arrived",
                       arrived: "arrived",
                       delayed: "scheduled",
-                      cancelled: "scheduled",
-                      landed: "arrived",
-                      in_air: "landed"
+                      cancelled: "scheduled"
                     };
                     updateFlightStatus(flight, nextStatus[flight.status]);
                   },

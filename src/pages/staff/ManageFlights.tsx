@@ -95,14 +95,11 @@ const ManageFlights = () => {
     const flightData: Flight = {
       id: `flight${Date.now()}`,
       flight_number: newFlight.flightNumber,
-      flightNumber: newFlight.flightNumber,
-      airline: newFlight.airline,
+      airline_id: newFlight.airline,
       origin: newFlight.origin,
       destination: newFlight.destination,
       departure_time: newFlight.departureTime,
-      departureTime: newFlight.departureTime,
       arrival_time: newFlight.arrivalTime,
-      arrivalTime: newFlight.arrivalTime,
       status: newFlight.status,
       price: newFlight.price || 0
     };

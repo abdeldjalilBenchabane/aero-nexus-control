@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import PageLayout from "@/components/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,18 +39,13 @@ const MyReservations = () => {
     const flightData: Flight = flight || {
       id: "",
       flight_number: "Unknown",
-      flightNumber: "Unknown",
-      airline: "Unknown",
+      airline_id: "Unknown",
       origin: "Unknown",
       destination: "Unknown",
       departure_time: new Date().toISOString(),
-      departureTime: new Date().toISOString(),
       arrival_time: new Date().toISOString(),
-      arrivalTime: new Date().toISOString(),
       status: "scheduled",
-      price: 0,
-      gate: "Unknown",
-      runway: "Unknown"
+      price: 0
     };
     
     return {

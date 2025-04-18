@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import PageLayout from "@/components/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,13 +10,11 @@ import { InfoIcon } from "lucide-react";
 
 const PassengerNotify = () => {
   const { user } = useAuth();
-  // Use fallback for airlineId
-  const airlineCompany = user?.airlineId || user?.id || "Unknown Airline";
+  // Use fallback for airline_id
+  const airlineCompany = user?.airline_id || user?.id || "Unknown Airline";
   
   // Filter flights that belong to this airline
-  const airlineFlights = flights.filter(flight => 
-    (flight.airline_id === airlineCompany || flight.airline === airlineCompany)
-  );
+  const airlineFlights = flights.filter(flight => flight.airline_id === airlineCompany);
 
   return (
     <PageLayout title="Notify Passengers">
@@ -42,7 +39,7 @@ const PassengerNotify = () => {
             <NotificationForm 
               allowedTargets={["flight"]}
               flightFilter={(flight: Flight) => 
-                (flight.airline_id === airlineCompany || flight.airline === airlineCompany)
+                (flight.airline_id === airlineCompany)
               }
               onSendNotification={(data) => {
                 console.log("Sending airline notification:", data);

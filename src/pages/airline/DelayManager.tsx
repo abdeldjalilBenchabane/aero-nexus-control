@@ -15,9 +15,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const DelayManager = () => {
   const { user } = useAuth();
-  const airlineCompany = user?.airlineId || user?.id || "Unknown Airline";
+  const airlineCompany = user?.airline_id || user?.id || "Unknown Airline";
   
-  const airlineFlights = flights.filter(flight => flight.airline === airlineCompany);
+  const airlineFlights = flights.filter(flight => flight.airline_id === airlineCompany);
   
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null);
   const [isDelayDialogOpen, setIsDelayDialogOpen] = useState(false);

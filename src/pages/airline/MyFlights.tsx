@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const MyFlights = () => {
   const { user } = useAuth();
-  const airlineCompany = user?.airlineId || user?.id || "Unknown Airline";
+  const airlineCompany = user?.airline_id || user?.id || "Unknown Airline";
   
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");

@@ -1,3 +1,4 @@
+
 import PageLayout from "@/components/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { flights, notifications, Flight } from "@/lib/db";
@@ -10,9 +11,9 @@ import { Plane, Users, Clock, AlertTriangle, CheckCircle, Bell } from "lucide-re
 
 const AirlineDashboard = () => {
   const { user } = useAuth();
-  const airlineCompany = user?.airlineId || user?.id || "Unknown Airline";
+  const airlineCompany = user?.airline_id || user?.id || "Unknown Airline";
   
-  const airlineFlights = flights.filter(flight => flight.airline === airlineCompany);
+  const airlineFlights = flights.filter(flight => flight.airline_id === airlineCompany);
   
   const totalFlights = airlineFlights.length;
   const activeFlights = airlineFlights.filter(flight => 
@@ -23,12 +24,12 @@ const AirlineDashboard = () => {
   
   const flightIds = airlineFlights.map(flight => flight.id);
   const relevantNotifications = notifications.filter(
-    notification => notification.flightId && flightIds.includes(notification.flightId)
+    notification => notification.flight_id && flightIds.includes(notification.flight_id)
   ).slice(0, 5);
   
   const today = new Date();
   const todayFlights = airlineFlights.filter(flight => {
-    const flightDate = new Date(flight.departureTime);
+    const flightDate = new Date(flight.departure_time);
     return (
       flightDate.getDate() === today.getDate() &&
       flightDate.getMonth() === today.getMonth() &&
