@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Flight } from "@/lib/types";
 import { flights } from "@/lib/db";
@@ -73,15 +72,20 @@ const FlightTable = ({
         return "bg-orange-500";
       case "cancelled":
         return "bg-red-500";
+      case "landed":
+        return "bg-green-700";
+      case "in_air":
+        return "bg-indigo-500";
       default:
         return "bg-gray-500";
     }
   };
 
-  // Filter flights based on search and status filter
   const filteredFlights = flights.filter(flight => {
+    const flightNum = flight.flight_number || flight.flightNumber || "";
+    
     const matchesSearch = search
-      ? (flight.flight_number?.toLowerCase().includes(search.toLowerCase()) ||
+      ? (flightNum.toLowerCase().includes(search.toLowerCase()) ||
         flight.origin.toLowerCase().includes(search.toLowerCase()) ||
         flight.destination.toLowerCase().includes(search.toLowerCase()))
       : true;
@@ -123,6 +127,8 @@ const FlightTable = ({
                   <SelectItem value="arrived">Arrived</SelectItem>
                   <SelectItem value="delayed">Delayed</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="landed">Landed</SelectItem>
+                  <SelectItem value="in_air">In Air</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -155,17 +161,17 @@ const FlightTable = ({
               filteredFlights.map((flight) => (
                 <TableRow key={flight.id} className={selectable ? "cursor-pointer hover:bg-muted/50" : ""} 
                   onClick={selectable ? () => onSelect?.(flight) : undefined}>
-                  <TableCell className="font-medium">{flight.flight_number}</TableCell>
+                  <TableCell className="font-medium">{flight.flight_number || flight.flightNumber}</TableCell>
                   <TableCell>{flight.origin}</TableCell>
                   <TableCell>{flight.destination}</TableCell>
-                  <TableCell>{formatDate(flight.departure_time)}</TableCell>
-                  <TableCell>{formatDate(flight.arrival_time)}</TableCell>
+                  <TableCell>{formatDate(flight.departure_time || flight.departureTime || "")}</TableCell>
+                  <TableCell>{formatDate(flight.arrival_time || flight.arrivalTime || "")}</TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(flight.status)}>
                       {flight.status.charAt(0).toUpperCase() + flight.status.slice(1)}
                     </Badge>
                   </TableCell>
-                  <TableCell>{flight.gate_number || flight.gate_id || "—"}</TableCell>
+                  <TableCell>{flight.gate_number || flight.gate_id || flight.gate || "—"}</TableCell>
                   {(actions.length > 0 || showActions || selectable) && (
                     <TableCell>
                       <div className="flex space-x-2">

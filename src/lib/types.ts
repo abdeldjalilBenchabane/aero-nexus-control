@@ -7,6 +7,8 @@ export interface User {
   role: "admin" | "staff" | "passenger" | "airline";
   created_at?: string;
   airline_id?: string;
+  // For backward compatibility
+  airlineId?: string;
 }
 
 export interface Airline {
@@ -22,6 +24,8 @@ export interface Airplane {
   airline_id: string;
   capacity: number;
   created_at?: string;
+  // For backward compatibility
+  airlineId?: string;
 }
 
 export interface Gate {
@@ -31,6 +35,8 @@ export interface Gate {
   terminal?: string;
   isAvailable?: boolean;
   created_at?: string;
+  // For backward compatibility
+  scheduledFlights?: number;
 }
 
 export interface Runway {
@@ -48,9 +54,15 @@ export interface Seat {
   seat_number: string;
   is_reserved?: boolean;
   is_available?: boolean;
+  // For backward compatibility
+  flightId?: string;
+  airplaneId?: string;
+  seatNumber?: string;
+  isReserved?: boolean;
+  isAvailable?: boolean;
 }
 
-export type FlightStatus = "scheduled" | "boarding" | "departed" | "arrived" | "delayed" | "cancelled";
+export type FlightStatus = "scheduled" | "boarding" | "departed" | "arrived" | "delayed" | "cancelled" | "landed" | "in_air";
 
 export interface Flight {
   id: string;
@@ -69,6 +81,15 @@ export interface Flight {
   status: FlightStatus;
   price: number;
   created_at?: string;
+  // For backward compatibility
+  flightNumber?: string;
+  airline?: string;
+  departureTime?: string;
+  arrivalTime?: string;
+  gate?: string;
+  runway?: string;
+  availableSeats?: string[];
+  bookedSeats?: { seatId: string }[];
 }
 
 export interface Reservation {
@@ -84,6 +105,13 @@ export interface Reservation {
   destination?: string;
   departure_time?: string;
   arrival_time?: string;
+  // For backward compatibility
+  userId?: string;
+  flightId?: string;
+  seat?: string;
+  seatId?: string;
+  seat_id?: string;
+  timestamp?: string;
 }
 
 export interface Notification {
@@ -104,6 +132,7 @@ export interface Notification {
   targetType?: "all" | "role" | "flight";
   targetId?: string;
   timestamp?: string;
+  flightId?: string;
 }
 
 // Auth response types

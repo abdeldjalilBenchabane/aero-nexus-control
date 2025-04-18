@@ -42,23 +42,27 @@ const NotificationForm = ({
 
   useEffect(() => {
     // Filter flights based on user role
-    if (user?.role === "airline" && user.airline_id) {
+    if (user?.role === "airline" && (user.airline_id || user.airlineId)) {
       // Airline users can only see their flights
       const airlineFlights = flights.filter(f => 
-        (f.airline_id && f.airline_id === user.airline_id) || 
-        (f.airline && f.airline === user.airline_id)
+        (f.airline_id && f.airline_id === (user.airline_id || user.airlineId)) || 
+        (f.airline && f.airline === (user.airline_id || user.airlineId))
       );
       
       // Map to the Flight type from types.ts with required properties
       const mappedFlights = airlineFlights.map(f => ({
         id: f.id,
         flight_number: f.flight_number || f.flightNumber || "",
+        flightNumber: f.flight_number || f.flightNumber || "",
         airline_id: f.airline_id || f.airline || "",
+        airline: f.airline_id || f.airline || "",
         destination: f.destination,
         departure_time: f.departure_time || f.departureTime || "",
+        departureTime: f.departure_time || f.departureTime || "",
         arrival_time: f.arrival_time || f.arrivalTime || "",
+        arrivalTime: f.arrival_time || f.arrivalTime || "",
         status: f.status as any,
-        price: 0, // Default value since it's required
+        price: f.price || 0, // Default value since it's required
         origin: f.origin
       }));
       
@@ -71,12 +75,16 @@ const NotificationForm = ({
           const mappedFlight = {
             id: f.id,
             flight_number: f.flight_number || f.flightNumber || "",
+            flightNumber: f.flight_number || f.flightNumber || "",
             airline_id: f.airline_id || f.airline || "",
+            airline: f.airline_id || f.airline || "",
             destination: f.destination,
             departure_time: f.departure_time || f.departureTime || "",
+            departureTime: f.departure_time || f.departureTime || "",
             arrival_time: f.arrival_time || f.arrivalTime || "",
+            arrivalTime: f.arrival_time || f.arrivalTime || "",
             status: f.status as any,
-            price: 0,
+            price: f.price || 0,
             origin: f.origin
           };
           return flightFilter(mappedFlight as Flight);
@@ -86,12 +94,16 @@ const NotificationForm = ({
         const mappedFlights = filteredFlights.map(f => ({
           id: f.id,
           flight_number: f.flight_number || f.flightNumber || "",
+          flightNumber: f.flight_number || f.flightNumber || "",
           airline_id: f.airline_id || f.airline || "",
+          airline: f.airline_id || f.airline || "",
           destination: f.destination,
           departure_time: f.departure_time || f.departureTime || "",
+          departureTime: f.departure_time || f.departureTime || "",
           arrival_time: f.arrival_time || f.arrivalTime || "",
+          arrivalTime: f.arrival_time || f.arrivalTime || "",
           status: f.status as any,
-          price: 0,
+          price: f.price || 0,
           origin: f.origin
         }));
         
@@ -101,12 +113,16 @@ const NotificationForm = ({
         const mappedFlights = flights.map(f => ({
           id: f.id,
           flight_number: f.flight_number || f.flightNumber || "",
+          flightNumber: f.flight_number || f.flightNumber || "",
           airline_id: f.airline_id || f.airline || "",
+          airline: f.airline_id || f.airline || "",
           destination: f.destination,
           departure_time: f.departure_time || f.departureTime || "",
+          departureTime: f.departure_time || f.departureTime || "",
           arrival_time: f.arrival_time || f.arrivalTime || "",
+          arrivalTime: f.arrival_time || f.arrivalTime || "",
           status: f.status as any,
-          price: 0,
+          price: f.price || 0,
           origin: f.origin
         }));
         

@@ -84,7 +84,7 @@ const NotificationList = ({
     if (!showIcon) return null;
     
     const targetType = notification.targetType || (notification.target_role === "all" ? "all" : 
-      notification.flight_id ? "flight" : "role");
+      notification.flight_id || notification.flightId ? "flight" : "role");
     
     switch (targetType) {
       case "all":

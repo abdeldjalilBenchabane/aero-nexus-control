@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -31,7 +30,7 @@ const SeatMap = ({
   useEffect(() => {
     if (flight) {
       // Use custom property or generate a list of all possible seats
-      if (flight.availableSeats) {
+      if (flight.availableSeats && Array.isArray(flight.availableSeats)) {
         setAvailableSeats(flight.availableSeats);
       } else {
         // Create a list of all possible seats
@@ -44,8 +43,8 @@ const SeatMap = ({
         setAvailableSeats(allSeats);
       }
       
-      if (flight.bookedSeats) {
-        setBookedSeats(flight.bookedSeats.map(seat => seat.seatId));
+      if (flight.bookedSeats && Array.isArray(flight.bookedSeats)) {
+        setBookedSeats(flight.bookedSeats.map(seat => typeof seat === 'string' ? seat : seat.seatId));
       } else {
         setBookedSeats([]);
       }

@@ -1,9 +1,8 @@
-
 // Mock database for the airport flight management system
-import type { User, Flight, Gate, Runway, Notification, Reservation } from './types';
+import type { User, Flight, Gate, Runway, Notification, Reservation, Airline, Airplane, Seat } from './types';
 
 // Re-export the types to maintain compatibility with existing imports
-export type { User, Flight, Gate, Runway, Notification, Reservation };
+export type { User, Flight, Gate, Runway, Notification, Reservation, Airline, Airplane, Seat };
 
 // Mock data
 export const users: User[] = [
@@ -30,7 +29,8 @@ export const users: User[] = [
     password: "airline123",
     role: "airline",
     created_at: "2023-01-03T00:00:00Z",
-    airline_id: "skyways"
+    airline_id: "skyways",
+    airlineId: "skyways" // For backward compatibility
   },
   {
     id: "4",
@@ -122,21 +122,21 @@ export const gates: Gate[] = [
     gate_number: "A1",
     name: "A1",
     isAvailable: true,
-    scheduledFlights: 1 // For backward compatibility
+    scheduledFlights: 1
   },
   {
     id: "gate2",
     gate_number: "B3",
     name: "B3",
     isAvailable: true,
-    scheduledFlights: 1 // For backward compatibility
+    scheduledFlights: 1
   },
   {
     id: "gate3",
     gate_number: "C2",
     name: "C2",
     isAvailable: true,
-    scheduledFlights: 1 // For backward compatibility
+    scheduledFlights: 1
   }
 ];
 
@@ -206,7 +206,8 @@ export const reservations: Reservation[] = [
     userId: "4",
     flightId: "flight1",
     timestamp: "2023-06-10T12:00:00Z",
-    seat: "A1"
+    seat: "A1",
+    seatId: "seat1"
   },
   {
     id: "res2",
@@ -223,7 +224,8 @@ export const reservations: Reservation[] = [
     userId: "5", 
     flightId: "flight2",
     timestamp: "2023-06-11T14:30:00Z",
-    seat: "A2"
+    seat: "A2",
+    seatId: "seat9"
   },
   {
     id: "res3",
@@ -240,7 +242,8 @@ export const reservations: Reservation[] = [
     userId: "5",
     flightId: "flight2",
     timestamp: "2023-06-11T14:35:00Z",
-    seat: "B2"
+    seat: "B2",
+    seatId: "seat12"
   },
   {
     id: "res4",
@@ -257,7 +260,8 @@ export const reservations: Reservation[] = [
     userId: "4",
     flightId: "flight3",
     timestamp: "2023-06-12T09:15:00Z",
-    seat: "A1"
+    seat: "A1",
+    seatId: "seat16"
   },
   {
     id: "res5",
@@ -274,7 +278,8 @@ export const reservations: Reservation[] = [
     userId: "4",
     flightId: "flight3",
     timestamp: "2023-06-12T09:20:00Z",
-    seat: "B1"
+    seat: "B1",
+    seatId: "seat19"
   },
   {
     id: "res6",
@@ -291,7 +296,8 @@ export const reservations: Reservation[] = [
     userId: "4",
     flightId: "flight3",
     timestamp: "2023-06-12T09:25:00Z",
-    seat: "C1"
+    seat: "C1",
+    seatId: "seat22"
   }
 ];
 
@@ -391,6 +397,7 @@ export const getPassengerFlights = (passengerId: string): Flight[] => {
   return flights.filter(f => flightIds.includes(f.id));
 };
 
+// Ensure getNotificationsForUser uses both flight_id and flightId for compatibility
 export const getNotificationsForUser = (userId: string): Notification[] => {
   const user = getUserById(userId);
   if (!user) return [];
@@ -409,9 +416,10 @@ export const getNotificationsForUser = (userId: string): Notification[] => {
     }
     
     // Airline users can see their flight notifications
-    if ((notif.flight_id || notif.flightId) && user.role === "airline" && user.airline_id) {
+    if ((notif.flight_id || notif.flightId) && user.role === "airline" && (user.airline_id || user.airlineId)) {
       const flight = getFlightById(notif.flight_id || notif.flightId || "");
-      return flight?.airline_id === user.airline_id || flight?.airline === user.airline_id;
+      return flight?.airline_id === (user.airline_id || user.airlineId) || 
+             flight?.airline === (user.airline_id || user.airlineId);
     }
     
     // Admin and staff can see all notifications
@@ -458,18 +466,14 @@ export const bookSeat = (
     id: `res${reservations.length + 1}`,
     flight_id: flightId,
     user_id: passengerId,
-    seat_id: seatId, // For backward compatibility
-    seat_number: seat.seat_number,
-    flight_number: flight.flight_number,
-    destination: flight.destination,
-    departure_time: flight.departure_time,
-    arrival_time: flight.arrival_time,
-    reservation_time: new Date().toISOString(),
+    seat_number: "A1", // Placeholder, should be replaced with actual value
     // Legacy fields
     userId: passengerId,
     flightId: flightId,
     timestamp: new Date().toISOString(),
-    seat: seat.seat_number
+    seat: "A1", // Placeholder, should be replaced with actual value
+    seat_id: seatId, // For backward compatibility
+    seatId: seatId
   };
   
   reservations.push(newReservation);

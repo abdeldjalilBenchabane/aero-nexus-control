@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import FlightTable from "@/components/FlightTable";
 import { flights } from "@/lib/db";
-import type { Flight } from "@/lib/types";
+import type { Flight, FlightStatus } from "@/lib/types";
 import { Search, ArrowUpDown, RefreshCw } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -71,19 +71,21 @@ const RealTimeFlights = () => {
     setLastUpdated(new Date());
   };
 
-  const updateFlightStatus = (flight: Flight, newStatus: Flight["status"]) => {
+  const updateFlightStatus = (flight: Flight, newStatus: FlightStatus) => {
     console.log(`Updating flight ${flight.flight_number} status to ${newStatus}`);
     refreshData();
   };
 
   const handleUpdateUser = () => {
-    const nextStatus: Record<Flight["status"], Flight["status"]> = {
-      scheduled: "boarding",
-      boarding: "departed",
-      departed: "arrived",
-      arrived: "arrived",
-      delayed: "scheduled",
-      cancelled: "scheduled"
+    const nextStatus: Record<string, FlightStatus> = {
+      "scheduled": "boarding",
+      "boarding": "departed",
+      "departed": "arrived",
+      "arrived": "arrived",
+      "delayed": "scheduled",
+      "cancelled": "scheduled",
+      "landed": "arrived",
+      "in_air": "arrived"
     };
   }
 
@@ -188,13 +190,15 @@ const RealTimeFlights = () => {
                 {
                   label: "Update",
                   onClick: (flight) => {
-                    const nextStatus: Record<Flight["status"], Flight["status"]> = {
-                      scheduled: "boarding",
-                      boarding: "departed",
-                      departed: "arrived",
-                      arrived: "arrived",
-                      delayed: "scheduled",
-                      cancelled: "scheduled"
+                    const nextStatus: Record<string, FlightStatus> = {
+                      "scheduled": "boarding",
+                      "boarding": "departed",
+                      "departed": "arrived",
+                      "arrived": "arrived",
+                      "delayed": "scheduled",
+                      "cancelled": "scheduled",
+                      "landed": "arrived",
+                      "in_air": "arrived"
                     };
                     updateFlightStatus(flight, nextStatus[flight.status]);
                   },
