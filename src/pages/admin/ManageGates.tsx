@@ -76,8 +76,8 @@ const ManageGates = () => {
         return;
       }
 
+      // Match the database field structure from schema.sql
       await gateApi.create({
-        gate_number: formData.name,
         name: formData.name,
         terminal: formData.terminal
       });
@@ -105,7 +105,7 @@ const ManageGates = () => {
     setIsEditMode(true);
     setSelectedGate(gate);
     setFormData({
-      name: gate.gate_number || gate.name || "",
+      name: gate.name || "",
       terminal: gate.terminal || ""
     });
     setIsDialogOpen(true);
@@ -125,8 +125,8 @@ const ManageGates = () => {
         return;
       }
 
+      // Update using the field names from the schema
       await gateApi.update(selectedGate.id, {
-        gate_number: formData.name,
         name: formData.name,
         terminal: formData.terminal
       });
@@ -151,7 +151,7 @@ const ManageGates = () => {
   };
 
   const handleDeleteGate = async (gate: Gate) => {
-    if (!window.confirm(`Are you sure you want to delete gate ${gate.gate_number || gate.name}?`)) {
+    if (!window.confirm(`Are you sure you want to delete gate ${gate.name}?`)) {
       return;
     }
 
@@ -172,6 +172,17 @@ const ManageGates = () => {
         description: "Failed to delete gate. It may be in use by flights.",
         variant: "destructive"
       });
+    }
+  };
+
+  // Helper function to format date
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "—";
+    
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch (error) {
+      return "—";
     }
   };
 
@@ -270,9 +281,9 @@ const ManageGates = () => {
                 gates.map(gate => (
                   <TableRow key={gate.id}>
                     <TableCell>{gate.id}</TableCell>
-                    <TableCell>{gate.gate_number || gate.name}</TableCell>
+                    <TableCell>{gate.name}</TableCell>
                     <TableCell>{gate.terminal}</TableCell>
-                    <TableCell>{new Date(gate.created_at || '').toLocaleString()}</TableCell>
+                    <TableCell>{formatDate(gate.created_at)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="icon" onClick={() => handleEditGate(gate)}>

@@ -110,8 +110,22 @@ const ManageUsers = () => {
     }
 
     try {
-      const created = await userApi.create(newUser);
-      const updatedUsers = [...users, created];
+      const userData = {
+        name: newUser.name,
+        email: newUser.email,
+        password: newUser.password,
+        role: newUser.role
+      };
+      
+      const created = await userApi.create(userData);
+      // Make sure we have a properly formatted user object with all fields
+      const newUserObj = {
+        ...created,
+        name: created.name || newUser.name, // Ensure name is set
+        created_at: created.created_at || new Date().toISOString() // Ensure created_at is set
+      };
+      
+      const updatedUsers = [...users, newUserObj];
       setUsers(updatedUsers);
       setFilteredUsers(updatedUsers);
       
@@ -165,19 +179,30 @@ const ManageUsers = () => {
     }
 
     // Prepare update data (omit password if empty)
-    const updateData = {
-      ...newUser,
+    const updateData: Partial<User> = {
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role
     };
     
-    if (!updateData.password) {
-      delete updateData.password;
+    if (newUser.password) {
+      updateData.password = newUser.password;
     }
 
     try {
       const updated = await userApi.update(selectedUser.id, updateData);
+      
+      // Make sure name and created_at are properly set in the updated user
+      const updatedUserObj = {
+        ...updated,
+        name: updated.name || newUser.name,
+        created_at: updated.created_at || selectedUser.created_at || new Date().toISOString()
+      };
+      
       const updatedUsers = users.map(u => 
-        u.id === selectedUser.id ? { ...u, ...updated } : u
+        u.id === selectedUser.id ? updatedUserObj : u
       );
+      
       setUsers(updatedUsers);
       setFilteredUsers(updatedUsers);
       
@@ -201,7 +226,7 @@ const ManageUsers = () => {
 
   // Delete user
   const handleDeleteUser = async (user: User) => {
-    if (!window.confirm(`Are you sure you want to delete user ${user.name}?`)) {
+    if (!window.confirm(`Are you sure you want to delete user ${user.name || user.email}?`)) {
       return;
     }
 
@@ -223,6 +248,17 @@ const ManageUsers = () => {
         description: "Failed to delete user",
         variant: "destructive"
       });
+    }
+  };
+
+  // Helper function to format date or return placeholder
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "—";
+    
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch (error) {
+      return "—";
     }
   };
 
@@ -285,6 +321,18 @@ const ManageUsers = () => {
                 </div>
                 
                 <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="email" className="text-right">Email</Label>
+                  <Input 
+                    id="email" 
+                    name="email"
+                    type="email"
+                    className="col-span-3" 
+                    value={newUser.email}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="password" className="text-right">Password</Label>
                   <Input 
                     id="password" 
@@ -294,18 +342,6 @@ const ManageUsers = () => {
                     value={newUser.password}
                     onChange={handleInputChange}
                     placeholder={isEditMode ? "Leave blank to keep current password" : ""}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="email" className="text-right">Email</Label>
-                  <Input 
-                    id="email" 
-                    name="email"
-                    type="email"
-                    className="col-span-3" 
-                    value={newUser.email}
-                    onChange={handleInputChange}
                   />
                 </div>
                 
@@ -368,9 +404,7 @@ const ManageUsers = () => {
                         <span className="capitalize">{user.role}</span>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      {user.created_at ? new Date(user.created_at).toLocaleString() : "—"}
-                    </TableCell>
+                    <TableCell>{formatDate(user.created_at)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="icon" onClick={() => handleEditUser(user)}>

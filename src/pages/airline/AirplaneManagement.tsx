@@ -42,7 +42,10 @@ const AirplaneManagement = () => {
       setLoading(true);
       // Fetch airplanes for the current airline
       const airlineId = user?.airline_id || user?.id;
-      const data = await airplaneApi.getByAirline(airlineId!);
+      if (!airlineId) {
+        throw new Error("No airline ID found");
+      }
+      const data = await airplaneApi.getByAirline(airlineId);
       setAirplanes(data);
     } catch (error) {
       console.error("Error fetching airplanes:", error);
@@ -86,10 +89,13 @@ const AirplaneManagement = () => {
       }
 
       const airlineId = user?.airline_id || user?.id;
+      if (!airlineId) {
+        throw new Error("No airline ID found");
+      }
       
       await airplaneApi.create({
         name: formData.name,
-        airline_id: airlineId!,
+        airline_id: airlineId,
         capacity: formData.capacity
       });
 
@@ -137,6 +143,17 @@ const AirplaneManagement = () => {
         description: "Failed to delete airplane. It may be in use by flights.",
         variant: "destructive"
       });
+    }
+  };
+
+  // Helper function to format date
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "—";
+    
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch (error) {
+      return "—";
     }
   };
 
@@ -232,9 +249,7 @@ const AirplaneManagement = () => {
                     <TableCell>{airplane.id}</TableCell>
                     <TableCell>{airplane.name}</TableCell>
                     <TableCell>{airplane.capacity} seats</TableCell>
-                    <TableCell>
-                      {airplane.created_at ? new Date(airplane.created_at).toLocaleString() : "—"}
-                    </TableCell>
+                    <TableCell>{formatDate(airplane.created_at)}</TableCell>
                     <TableCell className="text-right">
                       <Button 
                         variant="ghost" 

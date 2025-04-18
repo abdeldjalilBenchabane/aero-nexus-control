@@ -30,21 +30,22 @@ export interface Airplane {
 
 export interface Gate {
   id: string;
-  gate_number: string;
-  name?: string;
+  name: string;
   terminal?: string;
-  isAvailable?: boolean;
   created_at?: string;
   // For backward compatibility
+  gate_number?: string;
+  isAvailable?: boolean;
   scheduledFlights?: number;
 }
 
 export interface Runway {
   id: string;
-  runway_number: string;
-  name?: string;
-  isAvailable?: boolean;
+  name: string;
   created_at?: string;
+  // For backward compatibility
+  runway_number?: string;
+  isAvailable?: boolean;
 }
 
 export interface Seat {
@@ -106,6 +107,7 @@ export interface Reservation {
   destination?: string;
   departure_time?: string;
   arrival_time?: string;
+  origin?: string; // Added missing field
   // For backward compatibility
   userId?: string;
   flightId?: string;

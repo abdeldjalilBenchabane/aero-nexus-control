@@ -75,8 +75,8 @@ const ManageRunways = () => {
         return;
       }
 
+      // Match the database field structure from schema.sql
       await runwayApi.create({
-        runway_number: formData.name,
         name: formData.name
       });
 
@@ -103,7 +103,7 @@ const ManageRunways = () => {
     setIsEditMode(true);
     setSelectedRunway(runway);
     setFormData({
-      name: runway.runway_number || runway.name || ""
+      name: runway.name || ""
     });
     setIsDialogOpen(true);
   };
@@ -122,8 +122,8 @@ const ManageRunways = () => {
         return;
       }
 
+      // Update using the field names from the schema
       await runwayApi.update(selectedRunway.id, {
-        runway_number: formData.name,
         name: formData.name
       });
 
@@ -147,7 +147,7 @@ const ManageRunways = () => {
   };
 
   const handleDeleteRunway = async (runway: Runway) => {
-    if (!window.confirm(`Are you sure you want to delete runway ${runway.runway_number || runway.name}?`)) {
+    if (!window.confirm(`Are you sure you want to delete runway ${runway.name}?`)) {
       return;
     }
 
@@ -168,6 +168,17 @@ const ManageRunways = () => {
         description: "Failed to delete runway. It may be in use by flights.",
         variant: "destructive"
       });
+    }
+  };
+
+  // Helper function to format date
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "—";
+    
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch (error) {
+      return "—";
     }
   };
 
@@ -253,8 +264,8 @@ const ManageRunways = () => {
                 runways.map(runway => (
                   <TableRow key={runway.id}>
                     <TableCell>{runway.id}</TableCell>
-                    <TableCell>{runway.runway_number || runway.name}</TableCell>
-                    <TableCell>{new Date(runway.created_at || '').toLocaleString()}</TableCell>
+                    <TableCell>{runway.name}</TableCell>
+                    <TableCell>{formatDate(runway.created_at)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="icon" onClick={() => handleEditRunway(runway)}>

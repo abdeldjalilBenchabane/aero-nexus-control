@@ -18,7 +18,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -145,6 +144,17 @@ const SearchFlights = () => {
     }
   };
 
+  // Helper function to format date or return placeholder
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "—";
+    
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch (error) {
+      return "—";
+    }
+  };
+
   return (
     <PageLayout title="Search Flights">
       <div className="space-y-8">
@@ -248,19 +258,19 @@ const SearchFlights = () => {
                               <p className="text-sm text-muted-foreground">Flight {flight.flight_number}</p>
                             </div>
                             <div className="text-right">
-                              <p className="font-medium">${flight.price.toFixed(2)}</p>
+                              <p className="font-medium">${flight.price?.toFixed(2) || "—"}</p>
                               <p className="text-xs text-muted-foreground">per person</p>
                             </div>
                           </div>
                           
                           <div className="mt-4 flex items-center justify-between">
                             <div>
-                              <p className="font-medium">{flight.origin}</p>
+                              <p className="font-medium">{flight.origin || "—"}</p>
                               <p className="text-sm text-muted-foreground">
-                                {new Date(flight.departure_time).toLocaleTimeString([], {
+                                {flight.departure_time ? new Date(flight.departure_time).toLocaleTimeString([], {
                                   hour: '2-digit',
                                   minute: '2-digit'
-                                })}
+                                }) : "—"}
                               </p>
                             </div>
                             
@@ -276,12 +286,12 @@ const SearchFlights = () => {
                             </div>
                             
                             <div className="text-right">
-                              <p className="font-medium">{flight.destination}</p>
+                              <p className="font-medium">{flight.destination || "—"}</p>
                               <p className="text-sm text-muted-foreground">
-                                {new Date(flight.arrival_time).toLocaleTimeString([], {
+                                {flight.arrival_time ? new Date(flight.arrival_time).toLocaleTimeString([], {
                                   hour: '2-digit',
                                   minute: '2-digit'
-                                })}
+                                }) : "—"}
                               </p>
                             </div>
                           </div>
@@ -319,13 +329,13 @@ const SearchFlights = () => {
               {selectedFlight && (
                 <div className="mt-2">
                   <p>Flight: {selectedFlight.flight_number}</p>
-                  <p>{selectedFlight.origin} to {selectedFlight.destination}</p>
+                  <p>{selectedFlight.origin || "—"} to {selectedFlight.destination || "—"}</p>
                   <p>
-                    {new Date(selectedFlight.departure_time).toLocaleDateString()} at {' '}
-                    {new Date(selectedFlight.departure_time).toLocaleTimeString([], {
+                    {selectedFlight.departure_time ? new Date(selectedFlight.departure_time).toLocaleDateString() : "—"} at {' '}
+                    {selectedFlight.departure_time ? new Date(selectedFlight.departure_time).toLocaleTimeString([], {
                       hour: '2-digit',
                       minute: '2-digit'
-                    })}
+                    }) : "—"}
                   </p>
                 </div>
               )}
