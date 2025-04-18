@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Flight } from "@/lib/types";
+import { Flight, Seat } from "@/lib/types";
 import { flights } from "@/lib/db";
 
 interface SeatMapProps {
@@ -29,8 +30,25 @@ const SeatMap = ({
   
   useEffect(() => {
     if (flight) {
-      setAvailableSeats(flight.availableSeats);
-      setBookedSeats(flight.bookedSeats.map(seat => seat.seatId));
+      // Use custom property or generate a list of all possible seats
+      if (flight.availableSeats) {
+        setAvailableSeats(flight.availableSeats);
+      } else {
+        // Create a list of all possible seats
+        const allSeats: string[] = [];
+        ROWS.forEach(row => {
+          COLUMNS.forEach(col => {
+            allSeats.push(`${row}${col}`);
+          });
+        });
+        setAvailableSeats(allSeats);
+      }
+      
+      if (flight.bookedSeats) {
+        setBookedSeats(flight.bookedSeats.map(seat => seat.seatId));
+      } else {
+        setBookedSeats([]);
+      }
     } else if (reservedSeats.length > 0) {
       // If no flight is provided but reservedSeats are, use those
       setBookedSeats(reservedSeats);

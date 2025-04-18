@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Bell, Info, AlertTriangle, CheckCircle, Check, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -84,7 +83,10 @@ const NotificationList = ({
   const getNotificationIcon = (notification: Notification) => {
     if (!showIcon) return null;
     
-    switch (notification.targetType) {
+    const targetType = notification.targetType || (notification.target_role === "all" ? "all" : 
+      notification.flight_id ? "flight" : "role");
+    
+    switch (targetType) {
       case "all":
         return <Info className="text-blue-500" size={18} />;
       case "role":
@@ -150,10 +152,12 @@ const NotificationList = ({
               <div className="flex justify-between flex-wrap gap-2 mb-2">
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="font-normal">
-                    {notification.sender.role.charAt(0).toUpperCase() + notification.sender.role.slice(1)}
+                    {notification.sender?.role?.charAt(0).toUpperCase() + notification.sender?.role?.slice(1) || 
+                     notification.user_role?.charAt(0).toUpperCase() + notification.user_role?.slice(1) || 
+                     "System"}
                   </Badge>
                   
-                  {notification.flightId && (
+                  {(notification.flight_id || notification.flightId) && (
                     <Badge variant="secondary" className="font-normal">
                       Flight related
                     </Badge>
@@ -161,7 +165,7 @@ const NotificationList = ({
                 </div>
                 
                 <div className="text-sm text-muted-foreground">
-                  {getTimeAgo(notification.timestamp)}
+                  {getTimeAgo(notification.created_at || notification.timestamp || new Date().toISOString())}
                 </div>
               </div>
               

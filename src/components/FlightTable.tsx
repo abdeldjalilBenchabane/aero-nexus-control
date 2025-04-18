@@ -81,9 +81,9 @@ const FlightTable = ({
   // Filter flights based on search and status filter
   const filteredFlights = flights.filter(flight => {
     const matchesSearch = search
-      ? flight.flightNumber.toLowerCase().includes(search.toLowerCase()) ||
+      ? (flight.flight_number?.toLowerCase().includes(search.toLowerCase()) ||
         flight.origin.toLowerCase().includes(search.toLowerCase()) ||
-        flight.destination.toLowerCase().includes(search.toLowerCase())
+        flight.destination.toLowerCase().includes(search.toLowerCase()))
       : true;
     
     const matchesFilter = statusFilter === "all" || flight.status === statusFilter;
@@ -155,17 +155,17 @@ const FlightTable = ({
               filteredFlights.map((flight) => (
                 <TableRow key={flight.id} className={selectable ? "cursor-pointer hover:bg-muted/50" : ""} 
                   onClick={selectable ? () => onSelect?.(flight) : undefined}>
-                  <TableCell className="font-medium">{flight.flightNumber}</TableCell>
+                  <TableCell className="font-medium">{flight.flight_number}</TableCell>
                   <TableCell>{flight.origin}</TableCell>
                   <TableCell>{flight.destination}</TableCell>
-                  <TableCell>{formatDate(flight.departureTime)}</TableCell>
-                  <TableCell>{formatDate(flight.arrivalTime)}</TableCell>
+                  <TableCell>{formatDate(flight.departure_time)}</TableCell>
+                  <TableCell>{formatDate(flight.arrival_time)}</TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(flight.status)}>
                       {flight.status.charAt(0).toUpperCase() + flight.status.slice(1)}
                     </Badge>
                   </TableCell>
-                  <TableCell>{flight.gate || "—"}</TableCell>
+                  <TableCell>{flight.gate_number || flight.gate_id || "—"}</TableCell>
                   {(actions.length > 0 || showActions || selectable) && (
                     <TableCell>
                       <div className="flex space-x-2">

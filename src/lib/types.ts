@@ -6,6 +6,7 @@ export interface User {
   password?: string;
   role: "admin" | "staff" | "passenger" | "airline";
   created_at?: string;
+  airline_id?: string; // Adding for backward compatibility
 }
 
 export interface Airline {
@@ -30,6 +31,7 @@ export interface Gate {
   terminal?: string;
   isAvailable?: boolean;
   created_at?: string;
+  scheduledFlights?: number; // For backward compatibility
 }
 
 export interface Runway {
@@ -54,20 +56,28 @@ export type FlightStatus = "scheduled" | "boarding" | "departed" | "arrived" | "
 export interface Flight {
   id: string;
   flight_number: string;
+  flightNumber?: string; // For backward compatibility
   airline_id: string;
+  airline?: string; // For backward compatibility
   airline_name?: string;
   airplane_id?: string;
   gate_id?: string;
   gate_number?: string;
+  gate?: string; // For backward compatibility
   runway_id?: string;
   runway_number?: string;
+  runway?: string; // For backward compatibility
   origin: string;
   destination: string;
   departure_time: string;
+  departureTime?: string; // For backward compatibility
   arrival_time: string;
+  arrivalTime?: string; // For backward compatibility
   status: FlightStatus;
   price: number;
   created_at?: string;
+  availableSeats?: string[]; // For backward compatibility
+  bookedSeats?: { seatId: string }[]; // For backward compatibility
 }
 
 export interface Reservation {
@@ -75,6 +85,7 @@ export interface Reservation {
   user_id: string;
   flight_id: string;
   seat_number: string;
+  seat_id?: string; // For backward compatibility
   status?: "confirmed" | "cancelled" | "checked-in";
   reservation_time?: string;
   created_at?: string;
@@ -83,6 +94,11 @@ export interface Reservation {
   destination?: string;
   departure_time?: string;
   arrival_time?: string;
+  // Legacy fields
+  userId?: string;
+  flightId?: string;
+  timestamp?: string;
+  seat?: string;
 }
 
 export interface Notification {
@@ -93,7 +109,15 @@ export interface Notification {
   user_role?: "admin" | "staff" | "airline";
   target_role?: "admin" | "staff" | "passenger" | "airline" | "all";
   flight_id?: string;
+  flightId?: string; // For backward compatibility
   created_at: string;
+  timestamp?: string; // For backward compatibility
+  targetType?: "all" | "role" | "flight"; // For backward compatibility
+  targetId?: string; // For backward compatibility
+  sender?: { // For backward compatibility
+    id: string;
+    role: "admin" | "staff" | "airline";
+  };
 }
 
 // Auth response types

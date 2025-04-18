@@ -1,8 +1,9 @@
+
 // Mock database for the airport flight management system
-import type { User, Flight, Gate, Runway, Notification, Reservation, AirlineProfile } from './types';
+import type { User, Flight, Gate, Runway, Notification, Reservation } from './types';
 
 // Re-export the types to maintain compatibility with existing imports
-export type { User, Flight, Gate, Runway, Notification, Reservation, AirlineProfile };
+export type { User, Flight, Gate, Runway, Notification, Reservation };
 
 // Mock data
 export const users: User[] = [
@@ -29,7 +30,7 @@ export const users: User[] = [
     password: "airline123",
     role: "airline",
     created_at: "2023-01-03T00:00:00Z",
-    airlineId: "skyways"
+    airline_id: "skyways"
   },
   {
     id: "4",
@@ -53,62 +54,65 @@ export const flights: Flight[] = [
   {
     id: "flight1",
     flight_number: "SK101",
+    flightNumber: "SK101", // For backward compatibility
     airline_id: "skyways",
     airline: "skyways", // For backward compatibility
     origin: "New York (JFK)",
     destination: "London (LHR)",
     departure_time: "2023-06-15T08:00:00Z",
+    departureTime: "2023-06-15T08:00:00Z", // For backward compatibility
     arrival_time: "2023-06-15T20:00:00Z",
+    arrivalTime: "2023-06-15T20:00:00Z", // For backward compatibility
     status: "scheduled",
     gate_id: "gate1",
     gate_number: "A1",
+    gate: "A1", // For backward compatibility
     runway_id: "runway1",
     runway_number: "R1",
-    price: 350,
-    // Legacy fields for compatibility
-    flightNumber: "SK101",
-    departureTime: "2023-06-15T08:00:00Z",
-    arrivalTime: "2023-06-15T20:00:00Z"
+    runway: "R1", // For backward compatibility
+    price: 350
   },
   {
     id: "flight2",
     flight_number: "SK202",
+    flightNumber: "SK202", // For backward compatibility
     airline_id: "skyways",
     airline: "skyways", // For backward compatibility
     origin: "London (LHR)",
     destination: "Paris (CDG)",
     departure_time: "2023-06-16T10:00:00Z",
+    departureTime: "2023-06-16T10:00:00Z", // For backward compatibility
     arrival_time: "2023-06-16T12:00:00Z",
+    arrivalTime: "2023-06-16T12:00:00Z", // For backward compatibility
     status: "scheduled",
     gate_id: "gate2",
     gate_number: "B3",
+    gate: "B3", // For backward compatibility
     runway_id: "runway2",
     runway_number: "R2",
-    price: 120,
-    // Legacy fields for compatibility
-    flightNumber: "SK202",
-    departureTime: "2023-06-16T10:00:00Z",
-    arrivalTime: "2023-06-16T12:00:00Z"
+    runway: "R2", // For backward compatibility
+    price: 120
   },
   {
     id: "flight3",
     flight_number: "SK303",
+    flightNumber: "SK303", // For backward compatibility
     airline_id: "skyways",
     airline: "skyways", // For backward compatibility
     origin: "Paris (CDG)",
     destination: "Tokyo (HND)",
     departure_time: "2023-06-17T14:00:00Z",
+    departureTime: "2023-06-17T14:00:00Z", // For backward compatibility
     arrival_time: "2023-06-18T10:00:00Z",
+    arrivalTime: "2023-06-18T10:00:00Z", // For backward compatibility
     status: "scheduled",
     gate_id: "gate3",
     gate_number: "C2",
+    gate: "C2", // For backward compatibility
     runway_id: "runway3",
     runway_number: "R3",
-    price: 850,
-    // Legacy fields for compatibility
-    flightNumber: "SK303",
-    departureTime: "2023-06-17T14:00:00Z",
-    arrivalTime: "2023-06-18T10:00:00Z"
+    runway: "R3", // For backward compatibility
+    price: 850
   }
 ];
 
@@ -117,19 +121,22 @@ export const gates: Gate[] = [
     id: "gate1",
     gate_number: "A1",
     name: "A1",
-    scheduledFlights: 1
+    isAvailable: true,
+    scheduledFlights: 1 // For backward compatibility
   },
   {
     id: "gate2",
     gate_number: "B3",
-    name: "B3", 
-    scheduledFlights: 1
+    name: "B3",
+    isAvailable: true,
+    scheduledFlights: 1 // For backward compatibility
   },
   {
     id: "gate3",
     gate_number: "C2",
     name: "C2",
-    scheduledFlights: 1
+    isAvailable: true,
+    scheduledFlights: 1 // For backward compatibility
   }
 ];
 
@@ -137,16 +144,19 @@ export const runways: Runway[] = [
   {
     id: "runway1",
     runway_number: "R1",
+    name: "R1",
     isAvailable: true
   },
   {
     id: "runway2",
     runway_number: "R2",
+    name: "R2",
     isAvailable: true
   },
   {
     id: "runway3",
     runway_number: "R3",
+    name: "R3",
     isAvailable: true
   }
 ];
@@ -185,8 +195,8 @@ export const reservations: Reservation[] = [
     id: "res1",
     flight_id: "flight1",
     user_id: "4",
-    seat_id: "seat1",
     seat_number: "A1",
+    seat_id: "seat1", // For backward compatibility
     flight_number: "SK101",
     destination: "London (LHR)",
     departure_time: "2023-06-15T08:00:00Z",
@@ -393,15 +403,15 @@ export const getNotificationsForUser = (userId: string): Notification[] => {
     if (notif.target_role === user.role) return true;
     
     // Flight-specific notifications
-    if (notif.flight_id && user.role === "passenger") {
+    if ((notif.flight_id || notif.flightId) && user.role === "passenger") {
       const userFlights = getPassengerFlights(userId).map(f => f.id);
-      return userFlights.includes(notif.flight_id);
+      return userFlights.includes(notif.flight_id || notif.flightId || "");
     }
     
     // Airline users can see their flight notifications
-    if (notif.flight_id && user.role === "airline" && user.airlineId) {
-      const flight = getFlightById(notif.flight_id);
-      return flight?.airline_id === user.airlineId || flight?.airline === user.airlineId;
+    if ((notif.flight_id || notif.flightId) && user.role === "airline" && user.airline_id) {
+      const flight = getFlightById(notif.flight_id || notif.flightId || "");
+      return flight?.airline_id === user.airline_id || flight?.airline === user.airline_id;
     }
     
     // Admin and staff can see all notifications
@@ -448,7 +458,7 @@ export const bookSeat = (
     id: `res${reservations.length + 1}`,
     flight_id: flightId,
     user_id: passengerId,
-    seat_id: seatId,
+    seat_id: seatId, // For backward compatibility
     seat_number: seat.seat_number,
     flight_number: flight.flight_number,
     destination: flight.destination,

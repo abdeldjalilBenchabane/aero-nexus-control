@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Flight, Notification } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -43,22 +42,21 @@ const NotificationForm = ({
 
   useEffect(() => {
     // Filter flights based on user role
-    if (user?.role === "airline" && user.airlineId) {
+    if (user?.role === "airline" && user.airline_id) {
       // Airline users can only see their flights
       const airlineFlights = flights.filter(f => 
-        (f.airline && f.airline === user.airlineId) || 
-        (f.airline === user.airlineId)
+        (f.airline_id && f.airline_id === user.airline_id) || 
+        (f.airline && f.airline === user.airline_id)
       );
       
       // Map to the Flight type from types.ts with required properties
       const mappedFlights = airlineFlights.map(f => ({
         id: f.id,
-        flight_number: f.flightNumber || "",
-        airline: f.airline,
-        airline_id: f.airline, // Map airline to airline_id for compatibility
+        flight_number: f.flight_number || f.flightNumber || "",
+        airline_id: f.airline_id || f.airline || "",
         destination: f.destination,
-        departure_time: f.departureTime || "",
-        arrival_time: f.arrivalTime || "",
+        departure_time: f.departure_time || f.departureTime || "",
+        arrival_time: f.arrival_time || f.arrivalTime || "",
         status: f.status as any,
         price: 0, // Default value since it's required
         origin: f.origin
@@ -72,12 +70,11 @@ const NotificationForm = ({
           // Map to Flight type for the filter function
           const mappedFlight = {
             id: f.id,
-            flight_number: f.flightNumber || "",
-            airline: f.airline,
-            airline_id: f.airline, // Map airline to airline_id for compatibility
+            flight_number: f.flight_number || f.flightNumber || "",
+            airline_id: f.airline_id || f.airline || "",
             destination: f.destination,
-            departure_time: f.departureTime || "",
-            arrival_time: f.arrivalTime || "",
+            departure_time: f.departure_time || f.departureTime || "",
+            arrival_time: f.arrival_time || f.arrivalTime || "",
             status: f.status as any,
             price: 0,
             origin: f.origin
@@ -88,12 +85,11 @@ const NotificationForm = ({
         // Map filtered flights to Flight type
         const mappedFlights = filteredFlights.map(f => ({
           id: f.id,
-          flight_number: f.flightNumber || "",
-          airline: f.airline,
-          airline_id: f.airline, // Map airline to airline_id for compatibility
+          flight_number: f.flight_number || f.flightNumber || "",
+          airline_id: f.airline_id || f.airline || "",
           destination: f.destination,
-          departure_time: f.departureTime || "",
-          arrival_time: f.arrivalTime || "",
+          departure_time: f.departure_time || f.departureTime || "",
+          arrival_time: f.arrival_time || f.arrivalTime || "",
           status: f.status as any,
           price: 0,
           origin: f.origin
@@ -104,12 +100,11 @@ const NotificationForm = ({
         // Map all flights to Flight type
         const mappedFlights = flights.map(f => ({
           id: f.id,
-          flight_number: f.flightNumber || "",
-          airline: f.airline,
-          airline_id: f.airline, // Map airline to airline_id for compatibility
+          flight_number: f.flight_number || f.flightNumber || "",
+          airline_id: f.airline_id || f.airline || "",
           destination: f.destination,
-          departure_time: f.departureTime || "",
-          arrival_time: f.arrivalTime || "",
+          departure_time: f.departure_time || f.departureTime || "",
+          arrival_time: f.arrival_time || f.arrivalTime || "",
           status: f.status as any,
           price: 0,
           origin: f.origin
@@ -278,7 +273,7 @@ const NotificationForm = ({
             <SelectContent>
               {availableFlights.map((flight) => (
                 <SelectItem key={flight.id} value={flight.id}>
-                  {flight.flight_number || flight.flightNumber} - {flight.origin || "-"} to {flight.destination}
+                  {flight.flight_number || ""} - {flight.origin || "-"} to {flight.destination}
                 </SelectItem>
               ))}
             </SelectContent>
