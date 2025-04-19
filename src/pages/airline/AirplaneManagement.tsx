@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import PageLayout from "@/components/PageLayout";
@@ -95,8 +96,7 @@ const AirplaneManagement = () => {
       await airplaneApi.create({
         name: formData.name,
         airline_id: airlineId,
-        capacity: formData.capacity,
-        created_at: new Date().toISOString() // Add created_at field
+        capacity: formData.capacity
       });
 
       toast({
