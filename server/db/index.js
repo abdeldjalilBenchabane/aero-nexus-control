@@ -13,6 +13,16 @@ const query = async (sql, params = []) => {
   }
 };
 
+// Format date or return null for display
+const formatDateOrNull = (date) => {
+  if (!date) return null;
+  try {
+    return new Date(date).toISOString();
+  } catch (e) {
+    return null;
+  }
+};
+
 // User related database operations
 const userOperations = {
   getAll: async () => {
@@ -117,9 +127,19 @@ const airplaneOperations = {
   },
   create: async (airplane) => {
     const { name, airline_id, capacity } = airplane;
+    if (!name) {
+      throw new Error('Airplane name is required');
+    }
+    if (!airline_id) {
+      throw new Error('Airline ID is required');
+    }
+    if (!capacity || capacity < 1) {
+      throw new Error('Valid capacity is required');
+    }
+    
     const result = await query(
       'INSERT INTO airplanes (name, airline_id, capacity) VALUES (?, ?, ?)',
-      [name || 'New Airplane', airline_id, capacity || 50]
+      [name, airline_id, capacity]
     );
     
     const airplaneId = result.insertId;
@@ -156,6 +176,12 @@ const airplaneOperations = {
     return createdAirplane[0] || { id: airplaneId, ...airplane, created_at: new Date().toISOString() };
   },
   delete: async (id) => {
+    // First check if airplane is used in any flights
+    const flightsUsingAirplane = await query('SELECT COUNT(*) as count FROM flights WHERE airplane_id = ? AND status IN ("scheduled", "boarding", "delayed")', [id]);
+    if (flightsUsingAirplane[0].count > 0) {
+      throw new Error('Cannot delete airplane that is in use by active flights');
+    }
+    
     // First delete related seats
     await query('DELETE FROM seats WHERE airplane_id = ?', [id]);
     // Then delete the airplane
@@ -168,18 +194,20 @@ const airplaneOperations = {
 const flightOperations = {
   getAll: async () => {
     return await query(`
-      SELECT f.*, a.name as airline_name, g.name as gate_number, r.name as runway_number 
+      SELECT f.*, a.name as airline_name, ap.name as airplane_name, g.name as gate_number, r.name as runway_number 
       FROM flights f 
       LEFT JOIN airlines a ON f.airline_id = a.id
+      LEFT JOIN airplanes ap ON f.airplane_id = ap.id
       LEFT JOIN gates g ON f.gate_id = g.id
       LEFT JOIN runways r ON f.runway_id = r.id
     `);
   },
   getById: async (id) => {
     const flights = await query(`
-      SELECT f.*, a.name as airline_name, g.name as gate_number, r.name as runway_number 
+      SELECT f.*, a.name as airline_name, ap.name as airplane_name, g.name as gate_number, r.name as runway_number 
       FROM flights f 
       LEFT JOIN airlines a ON f.airline_id = a.id
+      LEFT JOIN airplanes ap ON f.airplane_id = ap.id
       LEFT JOIN gates g ON f.gate_id = g.id
       LEFT JOIN runways r ON f.runway_id = r.id
       WHERE f.id = ?
@@ -188,9 +216,10 @@ const flightOperations = {
   },
   getByAirline: async (airlineId) => {
     return await query(`
-      SELECT f.*, a.name as airline_name, g.name as gate_number, r.name as runway_number 
+      SELECT f.*, a.name as airline_name, ap.name as airplane_name, g.name as gate_number, r.name as runway_number 
       FROM flights f 
       LEFT JOIN airlines a ON f.airline_id = a.id
+      LEFT JOIN airplanes ap ON f.airplane_id = ap.id
       LEFT JOIN gates g ON f.gate_id = g.id
       LEFT JOIN runways r ON f.runway_id = r.id
       WHERE f.airline_id = ?
@@ -198,9 +227,10 @@ const flightOperations = {
   },
   search: async (criteria) => {
     let sql = `
-      SELECT f.*, a.name as airline_name, g.name as gate_number, r.name as runway_number 
+      SELECT f.*, a.name as airline_name, ap.name as airplane_name, g.name as gate_number, r.name as runway_number 
       FROM flights f 
       LEFT JOIN airlines a ON f.airline_id = a.id
+      LEFT JOIN airplanes ap ON f.airplane_id = ap.id
       LEFT JOIN gates g ON f.gate_id = g.id
       LEFT JOIN runways r ON f.runway_id = r.id
       WHERE 1=1
@@ -250,9 +280,10 @@ const flightOperations = {
     
     // Get the created flight with all fields
     const createdFlight = await query(`
-      SELECT f.*, a.name as airline_name, g.name as gate_number, r.name as runway_number 
+      SELECT f.*, a.name as airline_name, ap.name as airplane_name, g.name as gate_number, r.name as runway_number 
       FROM flights f 
       LEFT JOIN airlines a ON f.airline_id = a.id
+      LEFT JOIN airplanes ap ON f.airplane_id = ap.id
       LEFT JOIN gates g ON f.gate_id = g.id
       LEFT JOIN runways r ON f.runway_id = r.id
       WHERE f.id = ?
@@ -331,6 +362,9 @@ const flightOperations = {
     return await flightOperations.getById(id);
   },
   delete: async (id) => {
+    // Delete any reservations associated with this flight
+    await query('DELETE FROM reservations WHERE flight_id = ?', [id]);
+    // Then delete the flight
     await query('DELETE FROM flights WHERE id = ?', [id]);
     return { success: true };
   }
@@ -339,14 +373,23 @@ const flightOperations = {
 // Gate related database operations
 const gateOperations = {
   getAll: async () => {
-    return await query('SELECT * FROM gates');
+    const gates = await query('SELECT * FROM gates');
+    return gates.map(gate => ({
+      ...gate,
+      created_at: formatDateOrNull(gate.created_at)
+    }));
   },
   getById: async (id) => {
     const gates = await query('SELECT * FROM gates WHERE id = ?', [id]);
-    return gates[0] || null;
+    if (!gates || gates.length === 0) return null;
+    
+    return {
+      ...gates[0],
+      created_at: formatDateOrNull(gates[0].created_at)
+    };
   },
   getAvailable: async (departureTime, arrivalTime) => {
-    return await query(`
+    const gates = await query(`
       SELECT g.* 
       FROM gates g
       WHERE NOT EXISTS (
@@ -359,11 +402,22 @@ const gateOperations = {
         )
       )
     `, [arrivalTime, departureTime, departureTime, arrivalTime]);
+    
+    return gates.map(gate => ({
+      ...gate,
+      created_at: formatDateOrNull(gate.created_at)
+    }));
   },
   create: async (gate) => {
     const { name, terminal } = gate;
     if (!name) {
       throw new Error('Gate name is required');
+    }
+    
+    // Check if gate with this name already exists
+    const existingGate = await query('SELECT id FROM gates WHERE name = ?', [name]);
+    if (existingGate.length > 0) {
+      throw new Error('Gate with this name already exists');
     }
     
     const result = await query(
@@ -373,7 +427,19 @@ const gateOperations = {
     
     // Get the created gate with all fields
     const createdGate = await query('SELECT * FROM gates WHERE id = ?', [result.insertId]);
-    return createdGate[0] || { id: result.insertId, ...gate, created_at: new Date().toISOString() };
+    if (!createdGate || createdGate.length === 0) {
+      return { 
+        id: result.insertId, 
+        name, 
+        terminal, 
+        created_at: new Date().toISOString() 
+      };
+    }
+    
+    return {
+      ...createdGate[0],
+      created_at: formatDateOrNull(createdGate[0].created_at)
+    };
   },
   update: async (id, gate) => {
     let sql = 'UPDATE gates SET ';
@@ -381,6 +447,14 @@ const gateOperations = {
     const updateFields = [];
     
     if (gate.name !== undefined) {
+      // Check if new name already exists
+      if (gate.name) {
+        const existingGate = await query('SELECT id FROM gates WHERE name = ? AND id != ?', [gate.name, id]);
+        if (existingGate.length > 0) {
+          throw new Error('Gate with this name already exists');
+        }
+      }
+      
       updateFields.push('name = ?');
       params.push(gate.name);
     }
@@ -402,9 +476,13 @@ const gateOperations = {
   },
   delete: async (id) => {
     // Check if gate is in use by any flights
-    const flightsUsingGate = await query('SELECT COUNT(*) as count FROM flights WHERE gate_id = ?', [id]);
+    const flightsUsingGate = await query(
+      'SELECT COUNT(*) as count FROM flights WHERE gate_id = ? AND status IN ("scheduled", "boarding", "delayed")', 
+      [id]
+    );
+    
     if (flightsUsingGate[0].count > 0) {
-      throw new Error('Cannot delete gate that is in use by flights');
+      throw new Error('Cannot delete gate that is in use by active flights');
     }
     
     await query('DELETE FROM gates WHERE id = ?', [id]);
@@ -415,14 +493,23 @@ const gateOperations = {
 // Runway related database operations
 const runwayOperations = {
   getAll: async () => {
-    return await query('SELECT * FROM runways');
+    const runways = await query('SELECT * FROM runways');
+    return runways.map(runway => ({
+      ...runway,
+      created_at: formatDateOrNull(runway.created_at)
+    }));
   },
   getById: async (id) => {
     const runways = await query('SELECT * FROM runways WHERE id = ?', [id]);
-    return runways[0] || null;
+    if (!runways || runways.length === 0) return null;
+    
+    return {
+      ...runways[0],
+      created_at: formatDateOrNull(runways[0].created_at)
+    };
   },
   getAvailable: async (departureTime, arrivalTime) => {
-    return await query(`
+    const runways = await query(`
       SELECT r.* 
       FROM runways r
       WHERE NOT EXISTS (
@@ -435,11 +522,22 @@ const runwayOperations = {
         )
       )
     `, [arrivalTime, departureTime, departureTime, arrivalTime]);
+    
+    return runways.map(runway => ({
+      ...runway,
+      created_at: formatDateOrNull(runway.created_at)
+    }));
   },
   create: async (runway) => {
     const { name } = runway;
     if (!name) {
       throw new Error('Runway name is required');
+    }
+    
+    // Check if runway with this name already exists
+    const existingRunway = await query('SELECT id FROM runways WHERE name = ?', [name]);
+    if (existingRunway.length > 0) {
+      throw new Error('Runway with this name already exists');
     }
     
     const result = await query(
@@ -449,11 +547,28 @@ const runwayOperations = {
     
     // Get the created runway with all fields
     const createdRunway = await query('SELECT * FROM runways WHERE id = ?', [result.insertId]);
-    return createdRunway[0] || { id: result.insertId, ...runway, created_at: new Date().toISOString() };
+    if (!createdRunway || createdRunway.length === 0) {
+      return { 
+        id: result.insertId, 
+        name, 
+        created_at: new Date().toISOString() 
+      };
+    }
+    
+    return {
+      ...createdRunway[0],
+      created_at: formatDateOrNull(createdRunway[0].created_at)
+    };
   },
   update: async (id, runway) => {
     if (!runway.name) {
       throw new Error('Runway name is required');
+    }
+    
+    // Check if new name already exists
+    const existingRunway = await query('SELECT id FROM runways WHERE name = ? AND id != ?', [runway.name, id]);
+    if (existingRunway.length > 0) {
+      throw new Error('Runway with this name already exists');
     }
     
     await query('UPDATE runways SET name = ? WHERE id = ?', [runway.name, id]);
@@ -461,9 +576,13 @@ const runwayOperations = {
   },
   delete: async (id) => {
     // Check if runway is in use by any flights
-    const flightsUsingRunway = await query('SELECT COUNT(*) as count FROM flights WHERE runway_id = ?', [id]);
+    const flightsUsingRunway = await query(
+      'SELECT COUNT(*) as count FROM flights WHERE runway_id = ? AND status IN ("scheduled", "boarding", "delayed")', 
+      [id]
+    );
+    
     if (flightsUsingRunway[0].count > 0) {
-      throw new Error('Cannot delete runway that is in use by flights');
+      throw new Error('Cannot delete runway that is in use by active flights');
     }
     
     await query('DELETE FROM runways WHERE id = ?', [id]);
