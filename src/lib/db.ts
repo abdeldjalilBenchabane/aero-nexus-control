@@ -1,3 +1,4 @@
+
 // Mock database for the airport flight management system
 import type { User, Flight, Gate, Runway, Notification, Reservation, Airline, Airplane, Seat } from './types';
 
@@ -70,7 +71,8 @@ export const flights: Flight[] = [
     runway_id: "runway1",
     runway_number: "R1",
     runway: "R1", // For backward compatibility
-    price: 350
+    price: 350,
+    created_at: "2023-01-15T00:00:00Z"
   },
   {
     id: "flight2",
@@ -91,7 +93,8 @@ export const flights: Flight[] = [
     runway_id: "runway2",
     runway_number: "R2",
     runway: "R2", // For backward compatibility
-    price: 120
+    price: 120,
+    created_at: "2023-01-16T00:00:00Z"
   },
   {
     id: "flight3",
@@ -112,7 +115,8 @@ export const flights: Flight[] = [
     runway_id: "runway3",
     runway_number: "R3",
     runway: "R3", // For backward compatibility
-    price: 850
+    price: 850,
+    created_at: "2023-01-17T00:00:00Z"
   }
 ];
 
@@ -122,21 +126,24 @@ export const gates: Gate[] = [
     gate_number: "A1",
     name: "A1",
     isAvailable: true,
-    scheduledFlights: 1
+    scheduledFlights: 1,
+    created_at: "2023-01-01T00:00:00Z"
   },
   {
     id: "gate2",
     gate_number: "B3",
     name: "B3",
     isAvailable: true,
-    scheduledFlights: 1
+    scheduledFlights: 1,
+    created_at: "2023-01-01T00:00:00Z"
   },
   {
     id: "gate3",
     gate_number: "C2",
     name: "C2",
     isAvailable: true,
-    scheduledFlights: 1
+    scheduledFlights: 1,
+    created_at: "2023-01-01T00:00:00Z"
   }
 ];
 
@@ -145,19 +152,22 @@ export const runways: Runway[] = [
     id: "runway1",
     runway_number: "R1",
     name: "R1",
-    isAvailable: true
+    isAvailable: true,
+    created_at: "2023-01-01T00:00:00Z"
   },
   {
     id: "runway2",
     runway_number: "R2",
     name: "R2",
-    isAvailable: true
+    isAvailable: true,
+    created_at: "2023-01-01T00:00:00Z"
   },
   {
     id: "runway3",
     runway_number: "R3",
     name: "R3",
-    isAvailable: true
+    isAvailable: true,
+    created_at: "2023-01-01T00:00:00Z"
   }
 ];
 
@@ -202,6 +212,7 @@ export const reservations: Reservation[] = [
     departure_time: "2023-06-15T08:00:00Z",
     arrival_time: "2023-06-15T20:00:00Z",
     reservation_time: "2023-06-10T12:00:00Z",
+    created_at: "2023-06-10T12:00:00Z",
     // Legacy fields
     userId: "4",
     flightId: "flight1",
@@ -220,6 +231,7 @@ export const reservations: Reservation[] = [
     departure_time: "2023-06-16T10:00:00Z",
     arrival_time: "2023-06-16T12:00:00Z",
     reservation_time: "2023-06-11T14:30:00Z",
+    created_at: "2023-06-11T14:30:00Z",
     // Legacy fields
     userId: "5", 
     flightId: "flight2",
@@ -238,6 +250,7 @@ export const reservations: Reservation[] = [
     departure_time: "2023-06-16T10:00:00Z",
     arrival_time: "2023-06-16T12:00:00Z",
     reservation_time: "2023-06-11T14:35:00Z",
+    created_at: "2023-06-11T14:35:00Z",
     // Legacy fields
     userId: "5",
     flightId: "flight2",
@@ -256,6 +269,7 @@ export const reservations: Reservation[] = [
     departure_time: "2023-06-17T14:00:00Z",
     arrival_time: "2023-06-18T10:00:00Z",
     reservation_time: "2023-06-12T09:15:00Z",
+    created_at: "2023-06-12T09:15:00Z",
     // Legacy fields
     userId: "4",
     flightId: "flight3",
@@ -274,6 +288,7 @@ export const reservations: Reservation[] = [
     departure_time: "2023-06-17T14:00:00Z",
     arrival_time: "2023-06-18T10:00:00Z",
     reservation_time: "2023-06-12T09:20:00Z",
+    created_at: "2023-06-12T09:20:00Z",
     // Legacy fields
     userId: "4",
     flightId: "flight3",
@@ -292,6 +307,7 @@ export const reservations: Reservation[] = [
     departure_time: "2023-06-17T14:00:00Z",
     arrival_time: "2023-06-18T10:00:00Z",
     reservation_time: "2023-06-12T09:25:00Z",
+    created_at: "2023-06-12T09:25:00Z",
     // Legacy fields
     userId: "4",
     flightId: "flight3",
@@ -462,16 +478,18 @@ export const bookSeat = (
   seat.is_reserved = true;
   
   // Create reservation
+  const currentDate = new Date().toISOString();
   const newReservation: Reservation = {
     id: `res${reservations.length + 1}`,
     flight_id: flightId,
     user_id: passengerId,
-    seat_number: "A1", // Placeholder, should be replaced with actual value
+    seat_number: seat.seat_number,
+    created_at: currentDate,
     // Legacy fields
     userId: passengerId,
     flightId: flightId,
-    timestamp: new Date().toISOString(),
-    seat: "A1", // Placeholder, should be replaced with actual value
+    timestamp: currentDate,
+    seat: seat.seat_number,
     seat_id: seatId, // For backward compatibility
     seatId: seatId
   };

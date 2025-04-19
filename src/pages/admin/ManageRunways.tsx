@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import PageLayout from "@/components/PageLayout";
@@ -30,7 +29,6 @@ const ManageRunways = () => {
   });
   const { toast } = useToast();
 
-  // Fetch runways on component mount
   useEffect(() => {
     fetchRunways();
   }, []);
@@ -65,7 +63,6 @@ const ManageRunways = () => {
 
   const handleAddRunway = async () => {
     try {
-      // Validate form
       if (!formData.name) {
         toast({
           title: "Error",
@@ -75,9 +72,9 @@ const ManageRunways = () => {
         return;
       }
 
-      // Match the database field structure from schema.sql
       await runwayApi.create({
-        name: formData.name
+        name: formData.name,
+        created_at: new Date().toISOString()
       });
 
       toast({
@@ -85,7 +82,6 @@ const ManageRunways = () => {
         description: "Runway added successfully"
       });
 
-      // Refresh runways list
       fetchRunways();
       setIsDialogOpen(false);
       resetForm();
@@ -112,7 +108,6 @@ const ManageRunways = () => {
     if (!selectedRunway) return;
 
     try {
-      // Validate form
       if (!formData.name) {
         toast({
           title: "Error",
@@ -122,9 +117,9 @@ const ManageRunways = () => {
         return;
       }
 
-      // Update using the field names from the schema
       await runwayApi.update(selectedRunway.id, {
-        name: formData.name
+        name: formData.name,
+        created_at: selectedRunway.created_at || new Date().toISOString()
       });
 
       toast({
@@ -132,7 +127,6 @@ const ManageRunways = () => {
         description: "Runway updated successfully"
       });
 
-      // Refresh runways list
       fetchRunways();
       setIsDialogOpen(false);
       resetForm();
@@ -159,7 +153,6 @@ const ManageRunways = () => {
         description: "Runway deleted successfully"
       });
 
-      // Refresh runways list
       fetchRunways();
     } catch (error) {
       console.error("Error deleting runway:", error);
@@ -171,7 +164,6 @@ const ManageRunways = () => {
     }
   };
 
-  // Helper function to format date
   const formatDate = (dateString?: string) => {
     if (!dateString) return "—";
     
@@ -236,7 +228,6 @@ const ManageRunways = () => {
           </Dialog>
         </div>
         
-        {/* Runways Table */}
         <div className="border rounded-md">
           <Table>
             <TableHeader>

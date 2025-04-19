@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import PageLayout from "@/components/PageLayout";
@@ -31,7 +30,6 @@ const ManageGates = () => {
   });
   const { toast } = useToast();
 
-  // Fetch gates on component mount
   useEffect(() => {
     fetchGates();
   }, []);
@@ -66,7 +64,6 @@ const ManageGates = () => {
 
   const handleAddGate = async () => {
     try {
-      // Validate form
       if (!formData.name) {
         toast({
           title: "Error",
@@ -76,10 +73,10 @@ const ManageGates = () => {
         return;
       }
 
-      // Match the database field structure from schema.sql
       await gateApi.create({
         name: formData.name,
-        terminal: formData.terminal
+        terminal: formData.terminal,
+        created_at: new Date().toISOString()
       });
 
       toast({
@@ -87,7 +84,6 @@ const ManageGates = () => {
         description: "Gate added successfully"
       });
 
-      // Refresh gates list
       fetchGates();
       setIsDialogOpen(false);
       resetForm();
@@ -115,7 +111,6 @@ const ManageGates = () => {
     if (!selectedGate) return;
 
     try {
-      // Validate form
       if (!formData.name) {
         toast({
           title: "Error",
@@ -125,10 +120,10 @@ const ManageGates = () => {
         return;
       }
 
-      // Update using the field names from the schema
       await gateApi.update(selectedGate.id, {
         name: formData.name,
-        terminal: formData.terminal
+        terminal: formData.terminal,
+        created_at: selectedGate.created_at || new Date().toISOString()
       });
 
       toast({
@@ -136,7 +131,6 @@ const ManageGates = () => {
         description: "Gate updated successfully"
       });
 
-      // Refresh gates list
       fetchGates();
       setIsDialogOpen(false);
       resetForm();
@@ -163,7 +157,6 @@ const ManageGates = () => {
         description: "Gate deleted successfully"
       });
 
-      // Refresh gates list
       fetchGates();
     } catch (error) {
       console.error("Error deleting gate:", error);
@@ -175,7 +168,6 @@ const ManageGates = () => {
     }
   };
 
-  // Helper function to format date
   const formatDate = (dateString?: string) => {
     if (!dateString) return "—";
     
@@ -252,7 +244,6 @@ const ManageGates = () => {
           </Dialog>
         </div>
         
-        {/* Gates Table */}
         <div className="border rounded-md">
           <Table>
             <TableHeader>
