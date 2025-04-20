@@ -75,8 +75,7 @@ const ManageGates = () => {
 
       await gateApi.create({
         name: formData.name,
-        terminal: formData.terminal,
-        created_at: new Date().toISOString()
+        terminal: formData.terminal
       });
 
       toast({
@@ -122,8 +121,7 @@ const ManageGates = () => {
 
       await gateApi.update(selectedGate.id, {
         name: formData.name,
-        terminal: formData.terminal,
-        created_at: selectedGate.created_at || new Date().toISOString()
+        terminal: formData.terminal
       });
 
       toast({

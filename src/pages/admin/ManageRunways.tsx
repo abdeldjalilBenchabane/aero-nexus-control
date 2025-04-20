@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import PageLayout from "@/components/PageLayout";
@@ -73,8 +74,7 @@ const ManageRunways = () => {
       }
 
       await runwayApi.create({
-        name: formData.name,
-        created_at: new Date().toISOString()
+        name: formData.name
       });
 
       toast({
@@ -118,8 +118,7 @@ const ManageRunways = () => {
       }
 
       await runwayApi.update(selectedRunway.id, {
-        name: formData.name,
-        created_at: selectedRunway.created_at || new Date().toISOString()
+        name: formData.name
       });
 
       toast({

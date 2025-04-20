@@ -42,7 +42,11 @@ const userOperations = {
       'INSERT INTO users (name, email, password, role, airline_id) VALUES (?, ?, ?, ?, ?)',
       [name || 'New User', email, password, role, airline_id || null]
     );
-    return { id: result.insertId, ...user, created_at: new Date().toISOString() };
+    return { 
+      id: result.insertId, 
+      ...user, 
+      created_at: new Date().toISOString() 
+    };
   },
   update: async (id, userData) => {
     let sql = 'UPDATE users SET ';
@@ -82,7 +86,8 @@ const userOperations = {
     params.push(id);
     
     await query(sql, params);
-    return await userOperations.getById(id);
+    const updatedUser = await userOperations.getById(id);
+    return updatedUser || { id, ...userData, created_at: new Date().toISOString() };
   },
   delete: async (id) => {
     await query('DELETE FROM users WHERE id = ?', [id]);
@@ -93,24 +98,41 @@ const userOperations = {
 // Airline related database operations
 const airlineOperations = {
   getAll: async () => {
-    return await query('SELECT * FROM airlines');
+    const airlines = await query('SELECT * FROM airlines');
+    return airlines.map(airline => ({
+      ...airline,
+      created_at: formatDateOrNull(airline.created_at) || new Date().toISOString()
+    }));
   },
   getById: async (id) => {
     const airlines = await query('SELECT * FROM airlines WHERE id = ?', [id]);
-    return airlines[0] || null;
+    if (!airlines[0]) return null;
+    
+    return {
+      ...airlines[0],
+      created_at: formatDateOrNull(airlines[0].created_at) || new Date().toISOString()
+    };
   }
 };
 
 // Airplane related database operations
 const airplaneOperations = {
   getAll: async () => {
-    return await query('SELECT * FROM airplanes');
+    const airplanes = await query('SELECT * FROM airplanes');
+    return airplanes.map(airplane => ({
+      ...airplane,
+      created_at: formatDateOrNull(airplane.created_at) || new Date().toISOString()
+    }));
   },
   getByAirline: async (airlineId) => {
-    return await query('SELECT * FROM airplanes WHERE airline_id = ?', [airlineId]);
+    const airplanes = await query('SELECT * FROM airplanes WHERE airline_id = ?', [airlineId]);
+    return airplanes.map(airplane => ({
+      ...airplane,
+      created_at: formatDateOrNull(airplane.created_at) || new Date().toISOString()
+    }));
   },
   getAvailable: async (airlineId, departureTime, arrivalTime) => {
-    return await query(`
+    const airplanes = await query(`
       SELECT a.* FROM airplanes a
       WHERE a.airline_id = ?
       AND NOT EXISTS (
@@ -124,6 +146,11 @@ const airplaneOperations = {
         )
       )
     `, [airlineId, departureTime, departureTime, arrivalTime, arrivalTime, departureTime, arrivalTime]);
+    
+    return airplanes.map(airplane => ({
+      ...airplane,
+      created_at: formatDateOrNull(airplane.created_at) || new Date().toISOString()
+    }));
   },
   create: async (airplane) => {
     const { name, airline_id, capacity } = airplane;
@@ -173,7 +200,20 @@ const airplaneOperations = {
     
     // Get the created airplane with all fields
     const createdAirplane = await query('SELECT * FROM airplanes WHERE id = ?', [airplaneId]);
-    return createdAirplane[0] || { id: airplaneId, ...airplane, created_at: new Date().toISOString() };
+    if (createdAirplane[0]) {
+      return {
+        ...createdAirplane[0],
+        created_at: formatDateOrNull(createdAirplane[0].created_at) || new Date().toISOString()
+      };
+    }
+    
+    return { 
+      id: airplaneId, 
+      name, 
+      airline_id, 
+      capacity, 
+      created_at: new Date().toISOString() 
+    };
   },
   delete: async (id) => {
     // First check if airplane is used in any flights
@@ -193,7 +233,7 @@ const airplaneOperations = {
 // Flight related database operations
 const flightOperations = {
   getAll: async () => {
-    return await query(`
+    const flights = await query(`
       SELECT f.*, a.name as airline_name, ap.name as airplane_name, g.name as gate_number, r.name as runway_number 
       FROM flights f 
       LEFT JOIN airlines a ON f.airline_id = a.id
@@ -201,6 +241,11 @@ const flightOperations = {
       LEFT JOIN gates g ON f.gate_id = g.id
       LEFT JOIN runways r ON f.runway_id = r.id
     `);
+    
+    return flights.map(flight => ({
+      ...flight,
+      created_at: formatDateOrNull(flight.created_at) || new Date().toISOString()
+    }));
   },
   getById: async (id) => {
     const flights = await query(`
@@ -212,10 +257,16 @@ const flightOperations = {
       LEFT JOIN runways r ON f.runway_id = r.id
       WHERE f.id = ?
     `, [id]);
-    return flights[0] || null;
+    
+    if (!flights[0]) return null;
+    
+    return {
+      ...flights[0],
+      created_at: formatDateOrNull(flights[0].created_at) || new Date().toISOString()
+    };
   },
   getByAirline: async (airlineId) => {
-    return await query(`
+    const flights = await query(`
       SELECT f.*, a.name as airline_name, ap.name as airplane_name, g.name as gate_number, r.name as runway_number 
       FROM flights f 
       LEFT JOIN airlines a ON f.airline_id = a.id
@@ -224,6 +275,11 @@ const flightOperations = {
       LEFT JOIN runways r ON f.runway_id = r.id
       WHERE f.airline_id = ?
     `, [airlineId]);
+    
+    return flights.map(flight => ({
+      ...flight,
+      created_at: formatDateOrNull(flight.created_at) || new Date().toISOString()
+    }));
   },
   search: async (criteria) => {
     let sql = `
@@ -252,7 +308,12 @@ const flightOperations = {
       params.push(criteria.date);
     }
     
-    return await query(sql, params);
+    const flights = await query(sql, params);
+    
+    return flights.map(flight => ({
+      ...flight,
+      created_at: formatDateOrNull(flight.created_at) || new Date().toISOString()
+    }));
   },
   create: async (flight) => {
     const { 
@@ -289,7 +350,18 @@ const flightOperations = {
       WHERE f.id = ?
     `, [result.insertId]);
     
-    return createdFlight[0] || { id: result.insertId, ...flight, created_at: new Date().toISOString() };
+    if (createdFlight[0]) {
+      return {
+        ...createdFlight[0],
+        created_at: formatDateOrNull(createdFlight[0].created_at) || new Date().toISOString()
+      };
+    }
+    
+    return { 
+      id: result.insertId, 
+      ...flight, 
+      created_at: new Date().toISOString() 
+    };
   },
   update: async (id, flight) => {
     let sql = 'UPDATE flights SET ';
@@ -359,7 +431,8 @@ const flightOperations = {
     params.push(id);
     
     await query(sql, params);
-    return await flightOperations.getById(id);
+    const updated = await flightOperations.getById(id);
+    return updated;
   },
   delete: async (id) => {
     // Delete any reservations associated with this flight
@@ -376,7 +449,7 @@ const gateOperations = {
     const gates = await query('SELECT * FROM gates');
     return gates.map(gate => ({
       ...gate,
-      created_at: formatDateOrNull(gate.created_at)
+      created_at: formatDateOrNull(gate.created_at) || new Date().toISOString()
     }));
   },
   getById: async (id) => {
@@ -385,7 +458,7 @@ const gateOperations = {
     
     return {
       ...gates[0],
-      created_at: formatDateOrNull(gates[0].created_at)
+      created_at: formatDateOrNull(gates[0].created_at) || new Date().toISOString()
     };
   },
   getAvailable: async (departureTime, arrivalTime) => {
@@ -405,7 +478,7 @@ const gateOperations = {
     
     return gates.map(gate => ({
       ...gate,
-      created_at: formatDateOrNull(gate.created_at)
+      created_at: formatDateOrNull(gate.created_at) || new Date().toISOString()
     }));
   },
   create: async (gate) => {
@@ -438,7 +511,7 @@ const gateOperations = {
     
     return {
       ...createdGate[0],
-      created_at: formatDateOrNull(createdGate[0].created_at)
+      created_at: formatDateOrNull(createdGate[0].created_at) || new Date().toISOString()
     };
   },
   update: async (id, gate) => {
@@ -496,7 +569,7 @@ const runwayOperations = {
     const runways = await query('SELECT * FROM runways');
     return runways.map(runway => ({
       ...runway,
-      created_at: formatDateOrNull(runway.created_at)
+      created_at: formatDateOrNull(runway.created_at) || new Date().toISOString()
     }));
   },
   getById: async (id) => {
@@ -505,7 +578,7 @@ const runwayOperations = {
     
     return {
       ...runways[0],
-      created_at: formatDateOrNull(runways[0].created_at)
+      created_at: formatDateOrNull(runways[0].created_at) || new Date().toISOString()
     };
   },
   getAvailable: async (departureTime, arrivalTime) => {
@@ -525,7 +598,7 @@ const runwayOperations = {
     
     return runways.map(runway => ({
       ...runway,
-      created_at: formatDateOrNull(runway.created_at)
+      created_at: formatDateOrNull(runway.created_at) || new Date().toISOString()
     }));
   },
   create: async (runway) => {
@@ -557,7 +630,7 @@ const runwayOperations = {
     
     return {
       ...createdRunway[0],
-      created_at: formatDateOrNull(createdRunway[0].created_at)
+      created_at: formatDateOrNull(createdRunway[0].created_at) || new Date().toISOString()
     };
   },
   update: async (id, runway) => {
@@ -593,13 +666,18 @@ const runwayOperations = {
 // Reservation related database operations
 const reservationOperations = {
   getAll: async () => {
-    return await query(`
+    const reservations = await query(`
       SELECT r.*, f.flight_number, f.origin, f.destination, f.departure_time, f.arrival_time, s.seat_number, u.name as passengerName, u.email as passengerEmail 
       FROM reservations r
       JOIN flights f ON r.flight_id = f.id
       JOIN seats s ON r.seat_id = s.id
       JOIN users u ON r.user_id = u.id
     `);
+    
+    return reservations.map(reservation => ({
+      ...reservation,
+      created_at: formatDateOrNull(reservation.created_at) || new Date().toISOString()
+    }));
   },
   getById: async (id) => {
     const reservations = await query(`
@@ -610,10 +688,16 @@ const reservationOperations = {
       JOIN users u ON r.user_id = u.id
       WHERE r.id = ?
     `, [id]);
-    return reservations[0] || null;
+    
+    if (!reservations[0]) return null;
+    
+    return {
+      ...reservations[0],
+      created_at: formatDateOrNull(reservations[0].created_at) || new Date().toISOString()
+    };
   },
   getByUser: async (userId) => {
-    return await query(`
+    const reservations = await query(`
       SELECT r.*, f.flight_number, f.origin, f.destination, f.departure_time, f.arrival_time, s.seat_number, u.name as passengerName, u.email as passengerEmail
       FROM reservations r
       JOIN flights f ON r.flight_id = f.id
@@ -621,6 +705,11 @@ const reservationOperations = {
       JOIN users u ON r.user_id = u.id
       WHERE r.user_id = ?
     `, [userId]);
+    
+    return reservations.map(reservation => ({
+      ...reservation,
+      created_at: formatDateOrNull(reservation.created_at) || new Date().toISOString()
+    }));
   },
   create: async (reservation) => {
     const { user_id, flight_id, seat_id } = reservation;
@@ -630,11 +719,20 @@ const reservationOperations = {
     
     // Create reservation
     const result = await query(
-      'INSERT INTO reservations (user_id, flight_id, seat_id, status) VALUES (?, ?, ?, ?)',
+      'INSERT INTO reservations (user_id, flight_id, seat_id, status, created_at) VALUES (?, ?, ?, ?, NOW())',
       [user_id, flight_id, seat_id, 'confirmed']
     );
     
-    return { id: result.insertId, ...reservation, created_at: new Date().toISOString() };
+    const createdReservation = await reservationOperations.getById(result.insertId);
+    if (createdReservation) {
+      return createdReservation;
+    }
+    
+    return { 
+      id: result.insertId, 
+      ...reservation, 
+      created_at: new Date().toISOString() 
+    };
   },
   cancel: async (id) => {
     // Get reservation details first
@@ -656,21 +754,31 @@ const reservationOperations = {
 // Seat related database operations
 const seatOperations = {
   getByFlight: async (flightId) => {
-    return await query(`
+    const seats = await query(`
       SELECT s.* 
       FROM seats s
       JOIN flights f ON s.airplane_id = f.airplane_id
       WHERE f.id = ?
     `, [flightId]);
+    
+    return seats.map(seat => ({
+      ...seat,
+      created_at: formatDateOrNull(seat.created_at) || new Date().toISOString()
+    }));
   },
   getAvailable: async (flightId) => {
-    return await query(`
+    const seats = await query(`
       SELECT s.* 
       FROM seats s
       JOIN flights f ON s.airplane_id = f.airplane_id
       LEFT JOIN reservations r ON r.seat_id = s.id AND r.flight_id = f.id AND r.status = 'confirmed'
       WHERE f.id = ? AND (r.id IS NULL OR r.status = 'cancelled')
     `, [flightId]);
+    
+    return seats.map(seat => ({
+      ...seat,
+      created_at: formatDateOrNull(seat.created_at) || new Date().toISOString()
+    }));
   },
   getBySeatNumber: async (flightId, seatNumber) => {
     const seats = await query(`
@@ -679,25 +787,40 @@ const seatOperations = {
       JOIN flights f ON s.airplane_id = f.airplane_id
       WHERE f.id = ? AND s.seat_number = ?
     `, [flightId, seatNumber]);
-    return seats[0] || null;
+    
+    if (!seats[0]) return null;
+    
+    return {
+      ...seats[0],
+      created_at: formatDateOrNull(seats[0].created_at) || new Date().toISOString()
+    };
   }
 };
 
 // Notification related database operations
 const notificationOperations = {
   getAll: async () => {
-    return await query('SELECT * FROM notifications ORDER BY created_at DESC');
+    const notifications = await query('SELECT * FROM notifications ORDER BY created_at DESC');
+    return notifications.map(notification => ({
+      ...notification,
+      created_at: formatDateOrNull(notification.created_at) || new Date().toISOString()
+    }));
   },
   getForUser: async (userId, role) => {
     const user = await userOperations.getById(userId);
     
     if (!user) return [];
     
-    return await query(`
+    const notifications = await query(`
       SELECT n.* FROM notifications n
       WHERE n.target_role = ? OR n.target_role = 'all'
       ORDER BY n.created_at DESC
     `, [user.role]);
+    
+    return notifications.map(notification => ({
+      ...notification,
+      created_at: formatDateOrNull(notification.created_at) || new Date().toISOString()
+    }));
   },
   create: async (notification) => {
     const { title, message, user_id, target_role, flight_id } = notification;
@@ -705,7 +828,20 @@ const notificationOperations = {
       'INSERT INTO notifications (title, message, user_id, target_role, flight_id, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
       [title, message, user_id, target_role, flight_id]
     );
-    return { id: result.insertId, ...notification, created_at: new Date().toISOString() };
+    
+    const createdNotification = await query('SELECT * FROM notifications WHERE id = ?', [result.insertId]);
+    if (createdNotification[0]) {
+      return {
+        ...createdNotification[0],
+        created_at: formatDateOrNull(createdNotification[0].created_at) || new Date().toISOString()
+      };
+    }
+    
+    return { 
+      id: result.insertId, 
+      ...notification, 
+      created_at: new Date().toISOString() 
+    };
   }
 };
 
@@ -715,7 +851,13 @@ const authOperations = {
     const user = await userOperations.getByCredentials(email, password);
     if (!user) return null;
     
-    return { user, token: 'mock-token-' + user.id };
+    return { 
+      user: {
+        ...user,
+        created_at: formatDateOrNull(user.created_at) || new Date().toISOString()
+      }, 
+      token: 'mock-token-' + user.id 
+    };
   },
   register: async (userData) => {
     // Check if email already exists
@@ -725,7 +867,13 @@ const authOperations = {
     }
     
     const user = await userOperations.create(userData);
-    return { user, token: 'mock-token-' + user.id };
+    return { 
+      user: {
+        ...user,
+        created_at: formatDateOrNull(user.created_at) || new Date().toISOString()
+      }, 
+      token: 'mock-token-' + user.id 
+    };
   }
 };
 

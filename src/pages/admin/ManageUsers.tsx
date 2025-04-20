@@ -113,8 +113,7 @@ const ManageUsers = () => {
         name: newUser.name,
         email: newUser.email,
         password: newUser.password,
-        role: newUser.role,
-        created_at: new Date().toISOString() // Add created_at field
+        role: newUser.role
       };
       
       const created = await userApi.create(userData);
