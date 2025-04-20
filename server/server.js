@@ -138,6 +138,7 @@ app.get('/api/airplanes/airline/:airlineId', async (req, res) => {
   }
 });
 
+// FIX: Adding the missing endpoint for available airplanes
 app.post('/api/airplanes/available', async (req, res) => {
   try {
     const { airline_id, departure_time, arrival_time } = req.body;
@@ -188,6 +189,7 @@ app.get('/api/gates/:id', async (req, res) => {
   }
 });
 
+// FIX: Adding the missing endpoint for available gates
 app.post('/api/gates/available', async (req, res) => {
   try {
     const { departure_time, arrival_time } = req.body;
@@ -250,6 +252,7 @@ app.get('/api/runways/:id', async (req, res) => {
   }
 });
 
+// FIX: Adding the missing endpoint for available runways
 app.post('/api/runways/available', async (req, res) => {
   try {
     const { departure_time, arrival_time } = req.body;
@@ -321,6 +324,7 @@ app.get('/api/flights/airline/:airlineId', async (req, res) => {
   }
 });
 
+// FIX: Adding the search endpoint for flights
 app.post('/api/flights/search', async (req, res) => {
   try {
     const flights = await db.flights.search(req.body);

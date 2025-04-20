@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Flight, Airline, Airplane, Gate, Runway, FlightStatus } from "@/lib/types";
@@ -155,8 +154,22 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
   }, [watchDepartureTime, watchArrivalTime, toast]);
 
   const onSubmit = async (data: FlightFormValues) => {
-    // Validate that departure time is before arrival time
-    if (new Date(data.departure_time) >= new Date(data.arrival_time)) {
+    // FIX: Improved validation for departure and arrival times
+    const departureDate = new Date(data.departure_time);
+    const arrivalDate = new Date(data.arrival_time);
+    
+    // Check if the dates are valid
+    if (isNaN(departureDate.getTime()) || isNaN(arrivalDate.getTime())) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter valid dates for departure and arrival",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Compare dates considering same-day flights (comparing timestamps)
+    if (departureDate.getTime() >= arrivalDate.getTime()) {
       toast({
         title: "Validation Error",
         description: "Arrival time must be after departure time",
@@ -202,10 +215,23 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
     }
   };
 
+  // FIX: Updated function to check if times are valid considering same-day flights
   const areTimesValid = () => {
     const departure = form.getValues("departure_time");
     const arrival = form.getValues("arrival_time");
-    return departure && arrival && new Date(departure) < new Date(arrival);
+    
+    if (!departure || !arrival) return false;
+    
+    const departureDate = new Date(departure);
+    const arrivalDate = new Date(arrival);
+    
+    // Check if the dates are valid
+    if (isNaN(departureDate.getTime()) || isNaN(arrivalDate.getTime())) {
+      return false;
+    }
+    
+    // Return true if departure time is before arrival time (timestamp comparison)
+    return departureDate.getTime() < arrivalDate.getTime();
   };
 
   return (
