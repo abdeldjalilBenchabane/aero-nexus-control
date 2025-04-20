@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Flight, Airline, Airplane, Gate, Runway, FlightStatus } from "@/lib/types";
@@ -65,6 +64,9 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
     }
   });
 
+  console.log("Initial form values:", form.getValues());
+  console.log("Initial data received:", initialData);
+
   const [airlines, setAirlines] = useState<Airline[]>([]);
   const [airplanes, setAirplanes] = useState<Airplane[]>([]);
   const [gates, setGates] = useState<Gate[]>([]);
@@ -81,6 +83,12 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
       try {
         const data = await airlineApi.getAll();
         setAirlines(data);
+        
+        // If we're in edit mode and there's an airline_id but no airlines loaded yet
+        if (editMode && initialData?.airline_id && data.length > 0) {
+          // Make sure we have the correct airline set
+          form.setValue("airline_id", initialData.airline_id);
+        }
       } catch (error) {
         console.error("Error fetching airlines:", error);
         toast({
@@ -92,33 +100,54 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
     };
     
     fetchAirlines();
-  }, [toast]);
+  }, [toast, form, editMode, initialData]);
   
   // Fetch airplanes when airline is selected
   useEffect(() => {
     const fetchAirplanes = async () => {
-      if (!watchAirlineId) return;
+      if (!watchAirlineId) {
+        console.log("No airline ID, skipping airplane fetch");
+        return;
+      }
       
       try {
+        let data: Airplane[] = [];
+        
         // If both times are set, try to fetch available airplanes
         if (watchDepartureTime && watchArrivalTime) {
           try {
-            const data = await airplaneApi.getAvailable(
+            console.log("Fetching available airplanes with params:", {
+              airline_id: watchAirlineId,
+              departure_time: watchDepartureTime,
+              arrival_time: watchArrivalTime
+            });
+            
+            data = await airplaneApi.getAvailable(
               watchAirlineId, 
               watchDepartureTime, 
               watchArrivalTime
             );
-            setAirplanes(data);
+            console.log("Available airplanes:", data);
           } catch (error) {
             console.error("Error fetching available airplanes, falling back to all airline's airplanes:", error);
             // Fallback: if the available endpoint fails, fetch all airplanes for this airline
-            const data = await airplaneApi.getByAirline(watchAirlineId);
-            setAirplanes(data);
+            data = await airplaneApi.getByAirline(watchAirlineId);
+            console.log("All airline airplanes:", data);
           }
         } else {
           // Otherwise, fetch all airplanes for this airline
-          const data = await airplaneApi.getByAirline(watchAirlineId);
-          setAirplanes(data);
+          console.log("Fetching all airplanes for airline:", watchAirlineId);
+          data = await airplaneApi.getByAirline(watchAirlineId);
+          console.log("All airline airplanes:", data);
+        }
+        
+        setAirplanes(data);
+        
+        // If we're in edit mode and there's an airplane_id but no airplanes loaded yet
+        if (editMode && initialData?.airplane_id && data.length > 0) {
+          // Make sure we have the correct airplane set
+          console.log("Setting airplane_id in edit mode:", initialData.airplane_id);
+          form.setValue("airplane_id", initialData.airplane_id);
         }
       } catch (error) {
         console.error("Error fetching airplanes:", error);
@@ -131,12 +160,51 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
     };
     
     fetchAirplanes();
-  }, [watchAirlineId, watchDepartureTime, watchArrivalTime, toast]);
+  }, [watchAirlineId, watchDepartureTime, watchArrivalTime, toast, form, editMode, initialData]);
+
+  // Fetch all gates and runways initially
+  useEffect(() => {
+    const fetchAllResources = async () => {
+      try {
+        // Fetch all gates and runways as a fallback
+        const [allGates, allRunways] = await Promise.all([
+          gateApi.getAll(),
+          runwayApi.getAll()
+        ]);
+        
+        setGates(allGates);
+        setRunways(allRunways);
+        
+        // If we're in edit mode, make sure the correct values are set
+        if (editMode) {
+          if (initialData?.gate_id) {
+            console.log("Setting gate_id in edit mode:", initialData.gate_id);
+            form.setValue("gate_id", initialData.gate_id);
+          }
+          
+          if (initialData?.runway_id) {
+            console.log("Setting runway_id in edit mode:", initialData.runway_id);
+            form.setValue("runway_id", initialData.runway_id);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching gates/runways:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load gates and runways",
+          variant: "destructive"
+        });
+      }
+    };
+    
+    fetchAllResources();
+  }, [toast, form, editMode, initialData]);
 
   // Fetch available gates and runways when times are set
   useEffect(() => {
     const fetchAvailableResources = async () => {
       if (!watchDepartureTime || !watchArrivalTime) {
+        console.log("Missing times, skipping available resources fetch");
         return;
       }
       
@@ -146,23 +214,42 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
         let runwaysData: Runway[] = [];
         
         try {
+          console.log("Fetching available gates with times:", watchDepartureTime, watchArrivalTime);
           gatesData = await gateApi.getAvailable(watchDepartureTime, watchArrivalTime);
+          console.log("Available gates:", gatesData);
         } catch (error) {
           console.error("Error fetching available gates, falling back to all gates:", error);
           // Fallback: if the available endpoint fails, fetch all gates
           gatesData = await gateApi.getAll();
+          console.log("All gates:", gatesData);
         }
         
         try {
+          console.log("Fetching available runways with times:", watchDepartureTime, watchArrivalTime);
           runwaysData = await runwayApi.getAvailable(watchDepartureTime, watchArrivalTime);
+          console.log("Available runways:", runwaysData);
         } catch (error) {
           console.error("Error fetching available runways, falling back to all runways:", error);
           // Fallback: if the available endpoint fails, fetch all runways
           runwaysData = await runwayApi.getAll();
+          console.log("All runways:", runwaysData);
         }
         
         setGates(gatesData);
         setRunways(runwaysData);
+        
+        // If we're in edit mode, make sure the correct values are set
+        if (editMode) {
+          if (initialData?.gate_id && !form.getValues("gate_id")) {
+            console.log("Setting gate_id in edit mode:", initialData.gate_id);
+            form.setValue("gate_id", initialData.gate_id);
+          }
+          
+          if (initialData?.runway_id && !form.getValues("runway_id")) {
+            console.log("Setting runway_id in edit mode:", initialData.runway_id);
+            form.setValue("runway_id", initialData.runway_id);
+          }
+        }
       } catch (error) {
         console.error("Error fetching gates/runways:", error);
         toast({
@@ -174,7 +261,7 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
     };
     
     fetchAvailableResources();
-  }, [watchDepartureTime, watchArrivalTime, toast]);
+  }, [watchDepartureTime, watchArrivalTime, toast, form, editMode, initialData]);
 
   const onSubmit = async (data: FlightFormValues) => {
     // Improved validation for departure and arrival times
@@ -201,6 +288,7 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
       return;
     }
 
+    console.log("Submitting flight data:", data);
     setLoading(true);
     
     try {
@@ -208,6 +296,7 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
       
       if (editMode && initialData?.id) {
         // Update existing flight
+        console.log("Updating flight:", initialData.id, data);
         result = await flightApi.update(initialData.id, data as Partial<Flight>);
         toast({
           title: "Success",
@@ -215,6 +304,7 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
         });
       } else {
         // Create new flight
+        console.log("Creating new flight:", data);
         result = await flightApi.create(data as Omit<Flight, "id">);
         form.reset();
         toast({
@@ -230,7 +320,7 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
       console.error("Error saving flight:", error);
       toast({
         title: "Error",
-        description: "Failed to save flight data",
+        description: "Failed to save flight data. Please check all fields and try again.",
         variant: "destructive"
       });
     } finally {
@@ -501,7 +591,7 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
                     <FormDescription>
                       {gates.length === 0 
                         ? "No gates available. Enter departure/arrival times to see available gates." 
-                        : ""}
+                        : `${gates.length} gates available`}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -536,7 +626,7 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
                     <FormDescription>
                       {runways.length === 0 
                         ? "No runways available. Enter departure/arrival times to see available runways." 
-                        : ""}
+                        : `${runways.length} runways available`}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

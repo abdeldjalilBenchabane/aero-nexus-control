@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -138,10 +137,13 @@ app.get('/api/airplanes/airline/:airlineId', async (req, res) => {
   }
 });
 
-// Add the missing endpoint for available airplanes
-app.post('/api/airplanes/available', async (req, res) => {
+// Add the missing endpoint for available airplanes - fixing method from POST to GET
+app.get('/api/airplanes/available', async (req, res) => {
   try {
-    const { airline_id, departure_time, arrival_time } = req.body;
+    const { airline_id, departure_time, arrival_time } = req.query;
+    if (!airline_id || !departure_time || !arrival_time) {
+      return res.status(400).json({ error: 'Missing required parameters' });
+    }
     const airplanes = await db.airplanes.getAvailable(airline_id, departure_time, arrival_time);
     res.json(airplanes);
   } catch (error) {
@@ -149,19 +151,15 @@ app.post('/api/airplanes/available', async (req, res) => {
   }
 });
 
-app.post('/api/airplanes', async (req, res) => {
+// Fix the existing POST endpoint as backup (so both methods work)
+app.post('/api/airplanes/available', async (req, res) => {
   try {
-    const airplane = await db.airplanes.create(req.body);
-    res.status(201).json(airplane);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.delete('/api/airplanes/:id', async (req, res) => {
-  try {
-    await db.airplanes.delete(req.params.id);
-    res.json({ success: true });
+    const { airline_id, departure_time, arrival_time } = req.body;
+    if (!airline_id || !departure_time || !arrival_time) {
+      return res.status(400).json({ error: 'Missing required parameters' });
+    }
+    const airplanes = await db.airplanes.getAvailable(airline_id, departure_time, arrival_time);
+    res.json(airplanes);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -189,10 +187,13 @@ app.get('/api/gates/:id', async (req, res) => {
   }
 });
 
-// Add the missing endpoint for available gates
-app.post('/api/gates/available', async (req, res) => {
+// Add the missing endpoint for available gates - fixing method from POST to GET
+app.get('/api/gates/available', async (req, res) => {
   try {
-    const { departure_time, arrival_time } = req.body;
+    const { departure_time, arrival_time } = req.query;
+    if (!departure_time || !arrival_time) {
+      return res.status(400).json({ error: 'Missing required parameters' });
+    }
     const gates = await db.gates.getAvailable(departure_time, arrival_time);
     res.json(gates);
   } catch (error) {
@@ -200,31 +201,15 @@ app.post('/api/gates/available', async (req, res) => {
   }
 });
 
-app.post('/api/gates', async (req, res) => {
+// Fix the existing POST endpoint as backup (so both methods work)
+app.post('/api/gates/available', async (req, res) => {
   try {
-    const gate = await db.gates.create(req.body);
-    res.status(201).json(gate);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.put('/api/gates/:id', async (req, res) => {
-  try {
-    const gate = await db.gates.update(req.params.id, req.body);
-    if (!gate) {
-      return res.status(404).json({ error: 'Gate not found' });
+    const { departure_time, arrival_time } = req.body;
+    if (!departure_time || !arrival_time) {
+      return res.status(400).json({ error: 'Missing required parameters' });
     }
-    res.json(gate);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.delete('/api/gates/:id', async (req, res) => {
-  try {
-    await db.gates.delete(req.params.id);
-    res.json({ success: true });
+    const gates = await db.gates.getAvailable(departure_time, arrival_time);
+    res.json(gates);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -252,10 +237,13 @@ app.get('/api/runways/:id', async (req, res) => {
   }
 });
 
-// Add the missing endpoint for available runways
-app.post('/api/runways/available', async (req, res) => {
+// Add the missing endpoint for available runways - fixing method from POST to GET
+app.get('/api/runways/available', async (req, res) => {
   try {
-    const { departure_time, arrival_time } = req.body;
+    const { departure_time, arrival_time } = req.query;
+    if (!departure_time || !arrival_time) {
+      return res.status(400).json({ error: 'Missing required parameters' });
+    }
     const runways = await db.runways.getAvailable(departure_time, arrival_time);
     res.json(runways);
   } catch (error) {
@@ -263,31 +251,15 @@ app.post('/api/runways/available', async (req, res) => {
   }
 });
 
-app.post('/api/runways', async (req, res) => {
+// Fix the existing POST endpoint as backup (so both methods work)
+app.post('/api/runways/available', async (req, res) => {
   try {
-    const runway = await db.runways.create(req.body);
-    res.status(201).json(runway);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.put('/api/runways/:id', async (req, res) => {
-  try {
-    const runway = await db.runways.update(req.params.id, req.body);
-    if (!runway) {
-      return res.status(404).json({ error: 'Runway not found' });
+    const { departure_time, arrival_time } = req.body;
+    if (!departure_time || !arrival_time) {
+      return res.status(400).json({ error: 'Missing required parameters' });
     }
-    res.json(runway);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.delete('/api/runways/:id', async (req, res) => {
-  try {
-    await db.runways.delete(req.params.id);
-    res.json({ success: true });
+    const runways = await db.runways.getAvailable(departure_time, arrival_time);
+    res.json(runways);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -324,7 +296,16 @@ app.get('/api/flights/airline/:airlineId', async (req, res) => {
   }
 });
 
-// Add the missing search endpoint for flights
+// Add the missing search endpoint for flights with both GET and POST methods
+app.get('/api/flights/search', async (req, res) => {
+  try {
+    const flights = await db.flights.search(req.query);
+    res.json(flights);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/api/flights/search', async (req, res) => {
   try {
     const flights = await db.flights.search(req.body);
@@ -336,56 +317,70 @@ app.post('/api/flights/search', async (req, res) => {
 
 app.post('/api/flights', async (req, res) => {
   try {
+    // Validate input
+    if (!req.body.flight_number || !req.body.airline_id || !req.body.origin || 
+        !req.body.destination || !req.body.departure_time || !req.body.arrival_time) {
+      return res.status(400).json({ error: 'Missing required flight information' });
+    }
+    
     const flight = await db.flights.create(req.body);
     res.status(201).json(flight);
   } catch (error) {
+    console.error("Error creating flight:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
 app.put('/api/flights/:id', async (req, res) => {
   try {
+    // Log the request to help debug
+    console.log("Update flight request:", req.params.id, req.body);
+    
     const flight = await db.flights.update(req.params.id, req.body);
     if (!flight) {
       return res.status(404).json({ error: 'Flight not found' });
     }
     res.json(flight);
   } catch (error) {
+    console.error("Error updating flight:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
+// Fix the gate assignment endpoint
 app.put('/api/flights/:id/gate', async (req, res) => {
   try {
     const { gateId } = req.body;
+    if (!gateId) {
+      return res.status(400).json({ error: 'Gate ID is required' });
+    }
+    
     const flight = await db.flights.update(req.params.id, { gate_id: gateId });
     if (!flight) {
       return res.status(404).json({ error: 'Flight not found' });
     }
     res.json(flight);
   } catch (error) {
+    console.error("Error assigning gate:", error);
     res.status(500).json({ error: error.message });
   }
 });
 
+// Fix the runway assignment endpoint
 app.put('/api/flights/:id/runway', async (req, res) => {
   try {
     const { runwayId } = req.body;
+    if (!runwayId) {
+      return res.status(400).json({ error: 'Runway ID is required' });
+    }
+    
     const flight = await db.flights.update(req.params.id, { runway_id: runwayId });
     if (!flight) {
       return res.status(404).json({ error: 'Flight not found' });
     }
     res.json(flight);
   } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.delete('/api/flights/:id', async (req, res) => {
-  try {
-    await db.flights.delete(req.params.id);
-    res.json({ success: true });
-  } catch (error) {
+    console.error("Error assigning runway:", error);
     res.status(500).json({ error: error.message });
   }
 });

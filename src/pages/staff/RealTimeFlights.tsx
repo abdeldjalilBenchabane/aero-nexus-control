@@ -28,7 +28,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
-import FlightTable from "@/components/FlightTable";
 import { format } from "date-fns";
 
 const statusProgressionMap: Record<FlightStatus, FlightStatus> = {
@@ -40,7 +39,19 @@ const statusProgressionMap: Record<FlightStatus, FlightStatus> = {
   arrived: "completed",
   delayed: "boarding",
   cancelled: "cancelled",
-  completed: "completed" // This is now valid since we added "completed" to FlightStatus
+  completed: "completed"
+};
+
+const statusLabels: Record<FlightStatus, string> = {
+  scheduled: "Scheduled",
+  boarding: "Boarding",
+  departed: "Departed",
+  in_air: "In Air",
+  landed: "Landed",
+  arrived: "Arrived",
+  delayed: "Delayed",
+  cancelled: "Cancelled",
+  completed: "Completed"
 };
 
 const RealTimeFlights = () => {
@@ -82,10 +93,11 @@ const RealTimeFlights = () => {
     }
   };
 
-  const updateFlightStatus = async (flight: Flight) => {
+  const updateFlightStatus = async (flight: Flight, newStatus?: FlightStatus) => {
     try {
       const currentStatus = flight.status;
-      const nextStatus = statusProgressionMap[currentStatus];
+      // Use the provided status or default to the next status
+      const nextStatus = newStatus || statusProgressionMap[currentStatus];
       
       // Skip if the flight is already at a terminal status
       if (currentStatus === "completed" || currentStatus === "cancelled") {
@@ -231,19 +243,38 @@ const RealTimeFlights = () => {
                             {flight.status.charAt(0).toUpperCase() + flight.status.slice(1).replace("_", " ")}
                           </Badge>
                         </TableCell>
-                        <TableCell>{flight.gate_number || flight.gate || "-"}</TableCell>
+                        <TableCell>{flight.gate_number || flight.gate_id || "—"}</TableCell>
                         <TableCell>
-                          <Button 
-                            onClick={() => updateFlightStatus(flight)}
-                            variant="outline"
-                            size="sm"
-                            disabled={
-                              flight.status === "cancelled" || 
-                              flight.status === "completed"
-                            }
-                          >
-                            Next Status
-                          </Button>
+                          {(flight.status !== "cancelled" && flight.status !== "completed") ? (
+                            <div className="flex flex-col gap-2">
+                              <Select 
+                                onValueChange={(value) => updateFlightStatus(flight, value as FlightStatus)}
+                                defaultValue=""
+                              >
+                                <SelectTrigger className="w-[140px]">
+                                  <SelectValue placeholder="Update Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Object.entries(statusLabels).map(([value, label]) => (
+                                    <SelectItem key={value} value={value}>
+                                      {label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Button 
+                                onClick={() => updateFlightStatus(flight)}
+                                variant="outline"
+                                size="sm"
+                              >
+                                Next Status ({statusLabels[statusProgressionMap[flight.status]]})
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">
+                              No actions available
+                            </span>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))
