@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Flight, Airline, Airplane, Gate, Runway, FlightStatus } from "@/lib/types";
@@ -39,7 +40,7 @@ type FlightFormValues = {
   destination: string;
   departure_time: string;
   arrival_time: string;
-  status: FlightStatus; // Changed from string to FlightStatus
+  status: FlightStatus;
   gate_id: string;
   runway_id: string;
   price: number;
@@ -99,14 +100,21 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
       if (!watchAirlineId) return;
       
       try {
-        // If both times are set, fetch available airplanes
+        // If both times are set, try to fetch available airplanes
         if (watchDepartureTime && watchArrivalTime) {
-          const data = await airplaneApi.getAvailable(
-            watchAirlineId, 
-            watchDepartureTime, 
-            watchArrivalTime
-          );
-          setAirplanes(data);
+          try {
+            const data = await airplaneApi.getAvailable(
+              watchAirlineId, 
+              watchDepartureTime, 
+              watchArrivalTime
+            );
+            setAirplanes(data);
+          } catch (error) {
+            console.error("Error fetching available airplanes, falling back to all airline's airplanes:", error);
+            // Fallback: if the available endpoint fails, fetch all airplanes for this airline
+            const data = await airplaneApi.getByAirline(watchAirlineId);
+            setAirplanes(data);
+          }
         } else {
           // Otherwise, fetch all airplanes for this airline
           const data = await airplaneApi.getByAirline(watchAirlineId);
@@ -133,10 +141,25 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
       }
       
       try {
-        const [gatesData, runwaysData] = await Promise.all([
-          gateApi.getAvailable(watchDepartureTime, watchArrivalTime),
-          runwayApi.getAvailable(watchDepartureTime, watchArrivalTime)
-        ]);
+        // Try to fetch available gates first
+        let gatesData: Gate[] = [];
+        let runwaysData: Runway[] = [];
+        
+        try {
+          gatesData = await gateApi.getAvailable(watchDepartureTime, watchArrivalTime);
+        } catch (error) {
+          console.error("Error fetching available gates, falling back to all gates:", error);
+          // Fallback: if the available endpoint fails, fetch all gates
+          gatesData = await gateApi.getAll();
+        }
+        
+        try {
+          runwaysData = await runwayApi.getAvailable(watchDepartureTime, watchArrivalTime);
+        } catch (error) {
+          console.error("Error fetching available runways, falling back to all runways:", error);
+          // Fallback: if the available endpoint fails, fetch all runways
+          runwaysData = await runwayApi.getAll();
+        }
         
         setGates(gatesData);
         setRunways(runwaysData);
@@ -154,7 +177,7 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
   }, [watchDepartureTime, watchArrivalTime, toast]);
 
   const onSubmit = async (data: FlightFormValues) => {
-    // FIX: Improved validation for departure and arrival times
+    // Improved validation for departure and arrival times
     const departureDate = new Date(data.departure_time);
     const arrivalDate = new Date(data.arrival_time);
     
@@ -215,7 +238,7 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
     }
   };
 
-  // FIX: Updated function to check if times are valid considering same-day flights
+  // Updated function to check if times are valid considering same-day flights
   const areTimesValid = () => {
     const departure = form.getValues("departure_time");
     const arrival = form.getValues("arrival_time");
@@ -347,7 +370,7 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
                       <Input type="datetime-local" {...field} />
                     </FormControl>
                     <FormMessage />
-                    {watchDepartureTime && watchArrivalTime && new Date(watchDepartureTime) >= new Date(watchArrivalTime) && (
+                    {watchDepartureTime && watchArrivalTime && !areTimesValid() && (
                       <p className="text-sm text-destructive">Arrival time must be after departure time</p>
                     )}
                   </FormItem>
@@ -377,6 +400,7 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
                           <SelectItem value="in_air">In Air</SelectItem>
                           <SelectItem value="landed">Landed</SelectItem>
                           <SelectItem value="arrived">Arrived</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
                           <SelectItem value="delayed">Delayed</SelectItem>
                           <SelectItem value="cancelled">Cancelled</SelectItem>
                         </SelectContent>
@@ -403,7 +427,7 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
                         type="number" 
                         placeholder="0.00" 
                         {...field}
-                        onChange={e => field.onChange(parseFloat(e.target.value))} 
+                        onChange={e => field.onChange(parseFloat(e.target.value) || 0)} 
                       />
                     </FormControl>
                     <FormMessage />
@@ -423,10 +447,10 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
                       <Select 
                         value={field.value} 
                         onValueChange={field.onChange}
-                        disabled={!watchAirlineId || !areTimesValid()}
+                        disabled={!watchAirlineId}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={!areTimesValid() ? "Set valid times first" : "Select airplane"} />
+                          <SelectValue placeholder={!watchAirlineId ? "Select airline first" : "Select airplane"} />
                         </SelectTrigger>
                         <SelectContent>
                           {airplanes.map(airplane => (
@@ -440,10 +464,8 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
                     <FormDescription>
                       {!watchAirlineId 
                         ? "Select an airline first" 
-                        : !areTimesValid() 
-                        ? "Set valid departure and arrival times to see available airplanes" 
                         : airplanes.length === 0 
-                        ? "No available airplanes for this time range" 
+                        ? "No available airplanes for this airline" 
                         : ""}
                     </FormDescription>
                     <FormMessage />
@@ -463,25 +485,22 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
                       <Select 
                         value={field.value} 
                         onValueChange={field.onChange}
-                        disabled={!areTimesValid()}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={!areTimesValid() ? "Set valid times first" : "Select gate"} />
+                          <SelectValue placeholder="Select gate" />
                         </SelectTrigger>
                         <SelectContent>
                           {gates.map(gate => (
                             <SelectItem key={gate.id} value={gate.id}>
-                              {gate.gate_number} {gate.terminal ? `(Terminal ${gate.terminal})` : ''}
+                              {gate.name || gate.gate_number} {gate.terminal ? `(Terminal ${gate.terminal})` : ''}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </FormControl>
                     <FormDescription>
-                      {!areTimesValid() 
-                        ? "Set valid departure and arrival times to see available gates" 
-                        : gates.length === 0 
-                        ? "No available gates for this time range" 
+                      {gates.length === 0 
+                        ? "No gates available. Enter departure/arrival times to see available gates." 
                         : ""}
                     </FormDescription>
                     <FormMessage />
@@ -501,25 +520,22 @@ const FlightForm = ({ onSuccess, initialData, editMode = false }: FlightFormProp
                       <Select 
                         value={field.value} 
                         onValueChange={field.onChange}
-                        disabled={!areTimesValid()}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder={!areTimesValid() ? "Set valid times first" : "Select runway"} />
+                          <SelectValue placeholder="Select runway" />
                         </SelectTrigger>
                         <SelectContent>
                           {runways.map(runway => (
                             <SelectItem key={runway.id} value={runway.id}>
-                              {runway.runway_number}
+                              {runway.name || runway.runway_number}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </FormControl>
                     <FormDescription>
-                      {!areTimesValid() 
-                        ? "Set valid departure and arrival times to see available runways" 
-                        : runways.length === 0 
-                        ? "No available runways for this time range" 
+                      {runways.length === 0 
+                        ? "No runways available. Enter departure/arrival times to see available runways." 
                         : ""}
                     </FormDescription>
                     <FormMessage />

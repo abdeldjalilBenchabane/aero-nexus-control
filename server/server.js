@@ -138,7 +138,7 @@ app.get('/api/airplanes/airline/:airlineId', async (req, res) => {
   }
 });
 
-// FIX: Adding the missing endpoint for available airplanes
+// Add the missing endpoint for available airplanes
 app.post('/api/airplanes/available', async (req, res) => {
   try {
     const { airline_id, departure_time, arrival_time } = req.body;
@@ -189,7 +189,7 @@ app.get('/api/gates/:id', async (req, res) => {
   }
 });
 
-// FIX: Adding the missing endpoint for available gates
+// Add the missing endpoint for available gates
 app.post('/api/gates/available', async (req, res) => {
   try {
     const { departure_time, arrival_time } = req.body;
@@ -252,7 +252,7 @@ app.get('/api/runways/:id', async (req, res) => {
   }
 });
 
-// FIX: Adding the missing endpoint for available runways
+// Add the missing endpoint for available runways
 app.post('/api/runways/available', async (req, res) => {
   try {
     const { departure_time, arrival_time } = req.body;
@@ -324,7 +324,7 @@ app.get('/api/flights/airline/:airlineId', async (req, res) => {
   }
 });
 
-// FIX: Adding the search endpoint for flights
+// Add the missing search endpoint for flights
 app.post('/api/flights/search', async (req, res) => {
   try {
     const flights = await db.flights.search(req.body);
@@ -390,6 +390,16 @@ app.delete('/api/flights/:id', async (req, res) => {
   }
 });
 
+// Get available seats for a flight
+app.get('/api/flights/:flightId/available-seats', async (req, res) => {
+  try {
+    const seats = await db.seats.getAvailable(req.params.flightId);
+    res.json(seats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Seats API
 app.get('/api/flights/:flightId/seats', async (req, res) => {
   try {
@@ -446,6 +456,15 @@ app.get('/api/reservations/:id', async (req, res) => {
 app.get('/api/reservations/user/:userId', async (req, res) => {
   try {
     const reservations = await db.reservations.getByUser(req.params.userId);
+    res.json(reservations);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/reservations/flight/:flightId', async (req, res) => {
+  try {
+    const reservations = await db.reservations.getByFlight(req.params.flightId);
     res.json(reservations);
   } catch (error) {
     res.status(500).json({ error: error.message });
