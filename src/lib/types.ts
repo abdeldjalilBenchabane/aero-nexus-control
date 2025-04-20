@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string; // Required now
@@ -68,7 +67,7 @@ export interface Seat {
   isAvailable?: boolean;
 }
 
-export type FlightStatus = "scheduled" | "boarding" | "departed" | "arrived" | "delayed" | "cancelled" | "landed" | "in_air";
+export type FlightStatus = "scheduled" | "boarding" | "departed" | "arrived" | "delayed" | "cancelled" | "landed" | "in_air" | "completed";
 
 export interface Flight {
   id: string;

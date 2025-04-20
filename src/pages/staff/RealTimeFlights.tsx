@@ -40,7 +40,7 @@ const statusProgressionMap: Record<FlightStatus, FlightStatus> = {
   arrived: "completed",
   delayed: "boarding",
   cancelled: "cancelled",
-  completed: "completed",
+  completed: "completed" // This is now valid since we added "completed" to FlightStatus
 };
 
 const RealTimeFlights = () => {
@@ -162,6 +162,7 @@ const RealTimeFlights = () => {
                     <SelectItem value="arrived">Arrived</SelectItem>
                     <SelectItem value="delayed">Delayed</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -221,6 +222,7 @@ const RealTimeFlights = () => {
                               flight.status === "in_air" ? "bg-indigo-500" :
                               flight.status === "landed" ? "bg-green-700" :
                               flight.status === "arrived" ? "bg-green-500" :
+                              flight.status === "completed" ? "bg-green-900" :
                               flight.status === "delayed" ? "bg-orange-500" :
                               flight.status === "cancelled" ? "bg-red-500" :
                               "bg-gray-500"
@@ -229,7 +231,7 @@ const RealTimeFlights = () => {
                             {flight.status.charAt(0).toUpperCase() + flight.status.slice(1).replace("_", " ")}
                           </Badge>
                         </TableCell>
-                        <TableCell>{flight.gate_number || flight.gateName || "-"}</TableCell>
+                        <TableCell>{flight.gate_number || flight.gate || "-"}</TableCell>
                         <TableCell>
                           <Button 
                             onClick={() => updateFlightStatus(flight)}
