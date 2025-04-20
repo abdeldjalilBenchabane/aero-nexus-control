@@ -8,7 +8,7 @@ export interface User {
   email: string;
   password?: string;
   role: "admin" | "staff" | "passenger" | "airline";
-  created_at: string; // Required now
+  created_at?: string; // Make optional for creating new records
   airline_id?: string;
   // For backward compatibility
   airlineId?: string;
@@ -18,7 +18,7 @@ export interface Airline {
   id: string;
   name: string;
   email: string;
-  created_at: string; // Required now
+  created_at?: string; // Make optional for creating new records
 }
 
 export interface Airplane {
@@ -26,7 +26,7 @@ export interface Airplane {
   name: string;
   airline_id: string;
   capacity: number;
-  created_at: string; // Required now
+  created_at?: string; // Make optional for creating new records
   // For backward compatibility
   airlineId?: string;
   airlineName?: string;
@@ -36,7 +36,7 @@ export interface Gate {
   id: string;
   name: string;
   terminal?: string;
-  created_at: string; // Required now
+  created_at?: string; // Make optional for creating new records
   // For backward compatibility
   gate_number?: string;
   isAvailable?: boolean;
@@ -46,7 +46,7 @@ export interface Gate {
 export interface Runway {
   id: string;
   name: string;
-  created_at: string; // Required now
+  created_at?: string; // Make optional for creating new records
   // For backward compatibility
   runway_number?: string;
   isAvailable?: boolean;
@@ -86,7 +86,7 @@ export interface Flight {
   arrival_time: string;
   status: FlightStatus;
   price: number;
-  created_at: string; // Required now
+  created_at?: string; // Make optional for creating new records
   // For backward compatibility
   flightNumber?: string;
   airline?: string;
@@ -107,7 +107,7 @@ export interface Reservation {
   seat_id?: string;
   status?: "confirmed" | "cancelled" | "checked-in";
   reservation_time?: string;
-  created_at: string; // Required now
+  created_at?: string; // Make optional for creating new records
   // Joined fields
   flight_number?: string;
   destination?: string;
@@ -133,7 +133,7 @@ export interface Notification {
   user_role?: "admin" | "staff" | "airline";
   target_role?: "admin" | "staff" | "passenger" | "airline" | "all";
   flight_id?: string;
-  created_at: string; // Required now
+  created_at?: string; // Make optional for creating new records
   // For backward compatibility
   sender?: { 
     id: string;
