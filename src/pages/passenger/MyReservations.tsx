@@ -46,6 +46,8 @@ const MyReservations = () => {
       setLoading(true);
       setError(null);
       
+      console.log("Fetching reservations for user ID:", user.id);
+      
       // Get reservation data
       const data = await reservationApi.getForUser(user.id);
       console.log("Fetched reservations:", data);
@@ -55,7 +57,9 @@ const MyReservations = () => {
         const reservationsWithFlights = await Promise.all(data.map(async (reservation) => {
           try {
             if (reservation.flight_id) {
+              console.log(`Fetching flight details for reservation ${reservation.id}, flight ${reservation.flight_id}`);
               const flightDetails = await flightApi.getById(reservation.flight_id);
+              console.log("Flight details:", flightDetails);
               return { ...reservation, flightDetails };
             }
           } catch (error) {

@@ -1,4 +1,3 @@
-
 // API utilities for AJAX requests
 import { Flight, User, Notification, Gate, Runway, Reservation, Airplane, Seat, Airline } from "./types";
 
@@ -37,7 +36,7 @@ const apiFetch = async <T>(
       options.body = JSON.stringify(data);
     }
 
-    console.log(`API ${method} request to ${url}`);
+    console.log(`API ${method} request to ${url}`, data ? data : "");
     const response = await fetch(url, options);
     
     if (!response.ok) {
@@ -66,6 +65,7 @@ export const flightApi = {
   getAvailableSeats: (flightId: string) => apiFetch<Seat[]>(`/flights/${flightId}/available-seats`),
   updateStatus: (id: string, status: string) => 
     apiFetch<Flight>(`/flights/${id}/status`, "PUT", { status }),
+  forceDelete: (id: string) => apiFetch<void>(`/flights/${id}/force-delete`, "DELETE"),
 };
 
 // User API
@@ -134,10 +134,15 @@ export const notificationApi = {
 export const reservationApi = {
   getAll: () => apiFetch<Reservation[]>("/reservations"),
   getById: (id: string) => apiFetch<Reservation>(`/reservations/${id}`),
-  getForUser: (userId: string) => apiFetch<Reservation[]>(`/reservations/user/${userId}`),
+  getForUser: (userId: string) => {
+    console.log("Fetching reservations for user:", userId);
+    return apiFetch<Reservation[]>(`/reservations/user/${userId}`);
+  },
   getForFlight: (flightId: string) => apiFetch<Reservation[]>(`/reservations/flight/${flightId}`),
-  create: (reservation: { flight_id: string, user_id: string, seat_id: string }) => 
-    apiFetch<{ success: boolean, reservation: Reservation }>("/reservations", "POST", reservation),
+  create: (reservation: { flight_id: string, user_id: string, seat_id: string }) => {
+    console.log("Creating reservation:", reservation);
+    return apiFetch<{ success: boolean, reservation: Reservation }>("/reservations", "POST", reservation);
+  },
   cancel: (id: string) => apiFetch<{ success: boolean }>(`/reservations/${id}/cancel`, "PUT"),
 };
 

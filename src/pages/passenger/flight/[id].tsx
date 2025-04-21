@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { flightApi, seatApi, reservationApi } from "@/lib/api";
 import { Flight, Seat } from "@/lib/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,12 +58,14 @@ const FlightDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [flight, setFlight] = useState<Flight | null>(null);
   const [availableSeats, setAvailableSeats] = useState<Seat[]>([]);
   const [selectedSeat, setSelectedSeat] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [bookingInProgress, setBookingInProgress] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -73,10 +76,14 @@ const FlightDetailPage = () => {
   const fetchFlightDetails = async () => {
     try {
       setLoading(true);
+      console.log("Fetching flight details for ID:", id);
       const flightData = await flightApi.getById(id!);
+      console.log("Flight data:", flightData);
       setFlight(flightData);
 
+      console.log("Fetching available seats for flight:", id);
       const seats = await seatApi.getAvailable(id!);
+      console.log("Available seats:", seats);
       setAvailableSeats(seats);
     } catch (error) {
       console.error("Error fetching flight details:", error);
@@ -92,11 +99,7 @@ const FlightDetailPage = () => {
 
   const handleBookSeat = async () => {
     if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to book a flight",
-        variant: "destructive",
-      });
+      setShowLoginDialog(true);
       return;
     }
 
@@ -112,6 +115,12 @@ const FlightDetailPage = () => {
     setShowConfirmDialog(true);
   };
 
+  const handleLogin = () => {
+    // Save the current flight ID in sessionStorage so we can return after login
+    sessionStorage.setItem('pendingFlightBooking', id!);
+    navigate('/login');
+  };
+
   const confirmBooking = async () => {
     try {
       setBookingInProgress(true);
@@ -122,7 +131,9 @@ const FlightDetailPage = () => {
         seat_id: selectedSeat
       };
       
+      console.log("Creating reservation:", reservation);
       const result = await reservationApi.create(reservation);
+      console.log("Reservation result:", result);
       
       if (result.success) {
         toast({
@@ -131,7 +142,7 @@ const FlightDetailPage = () => {
         });
         
         setTimeout(() => {
-          window.location.href = "/passenger/my-reservations";
+          navigate('/passenger/my-reservations');
         }, 2000);
       } else {
         throw new Error("Booking failed");
@@ -357,7 +368,7 @@ const FlightDetailPage = () => {
                         <SelectTrigger>
                           <SelectValue placeholder="Choose a seat" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white">
                           {availableSeats.map((seat) => (
                             <SelectItem key={seat.id} value={seat.id}>
                               {seat.seat_number} - {seat.class || 'Economy'} Class
@@ -452,6 +463,26 @@ const FlightDetailPage = () => {
               ) : (
                 "Confirm Booking"
               )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Login Required</AlertDialogTitle>
+            <AlertDialogDescription>
+              You need to be logged in to book a flight. Would you like to log in now?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleLogin}
+              className="bg-primary"
+            >
+              Go to Login
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

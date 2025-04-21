@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { flightApi, airlineApi } from "@/lib/api";
 import { Flight, FlightStatus } from "@/lib/types";
@@ -104,19 +105,34 @@ const RealTimeFlights = () => {
           title: "Status Unchanged",
           description: `Flight ${flight.flight_number || flight.flightNumber} is already ${currentStatus}.`
         });
+        setUpdatingFlights(prev => ({ ...prev, [flight.id]: false }));
         return;
       }
       
       console.log(`Updating flight ${flight.id} status to:`, nextStatus);
       
-      await flightApi.updateStatus(flight.id, nextStatus);
+      // Use a direct server-side request to update the status
+      const response = await fetch(`http://localhost:3001/api/flights/${flight.id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
+      
+      // Parse the response
+      const result = await response.json();
       
       toast({
         title: "Status Updated",
         description: `Flight ${flight.flight_number || flight.flightNumber} status changed from ${currentStatus} to ${nextStatus}`
       });
       
-      fetchFlights();
+      await fetchFlights(); // Refresh the flight list
       
     } catch (error) {
       console.error(`Error updating flight ${flight.id} status:`, error);
@@ -264,7 +280,7 @@ const RealTimeFlights = () => {
                                 <SelectTrigger className="w-[140px]">
                                   <SelectValue placeholder="Update Status" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="bg-white">
                                   {Object.entries(statusLabels).map(([value, label]) => (
                                     <SelectItem key={value} value={value}>
                                       {label}
