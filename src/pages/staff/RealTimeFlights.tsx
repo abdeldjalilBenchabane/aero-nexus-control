@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { flightApi, airlineApi } from "@/lib/api";
+import { flightApi } from "@/lib/api";
 import { Flight, FlightStatus } from "@/lib/types";
 import PageLayout from "@/components/PageLayout";
 import { Button } from "@/components/ui/button";
@@ -111,21 +110,7 @@ const RealTimeFlights = () => {
       
       console.log(`Updating flight ${flight.id} status to:`, nextStatus);
       
-      // Use a direct server-side request to update the status
-      const response = await fetch(`http://localhost:3001/api/flights/${flight.id}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status: nextStatus }),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
-      }
-      
-      // Parse the response
-      const result = await response.json();
+      await flightApi.updateStatus(flight.id, nextStatus);
       
       toast({
         title: "Status Updated",
@@ -191,7 +176,7 @@ const RealTimeFlights = () => {
                   <SelectTrigger>
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white">
                     <SelectItem value="all">All Statuses</SelectItem>
                     <SelectItem value="scheduled">Scheduled</SelectItem>
                     <SelectItem value="boarding">Boarding</SelectItem>
@@ -229,7 +214,10 @@ const RealTimeFlights = () => {
                   {loading ? (
                     <TableRow>
                       <TableCell colSpan={8} className="h-24 text-center">
-                        Loading flight data...
+                        <div className="flex justify-center items-center">
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Loading flight data...
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : getFilteredFlights().length === 0 ? (

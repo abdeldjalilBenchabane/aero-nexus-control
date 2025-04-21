@@ -1,3 +1,4 @@
+
 // API utilities for AJAX requests
 import { Flight, User, Notification, Gate, Runway, Reservation, Airplane, Seat, Airline } from "./types";
 

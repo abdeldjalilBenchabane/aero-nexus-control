@@ -63,6 +63,7 @@ const FlightDetailPage = () => {
   const [availableSeats, setAvailableSeats] = useState<Seat[]>([]);
   const [selectedSeat, setSelectedSeat] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [seatsLoading, setSeatsLoading] = useState(true);
   const [bookingInProgress, setBookingInProgress] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
@@ -81,10 +82,7 @@ const FlightDetailPage = () => {
       console.log("Flight data:", flightData);
       setFlight(flightData);
 
-      console.log("Fetching available seats for flight:", id);
-      const seats = await seatApi.getAvailable(id!);
-      console.log("Available seats:", seats);
-      setAvailableSeats(seats);
+      fetchAvailableSeats();
     } catch (error) {
       console.error("Error fetching flight details:", error);
       toast({
@@ -94,6 +92,26 @@ const FlightDetailPage = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAvailableSeats = async () => {
+    try {
+      setSeatsLoading(true);
+      console.log("Fetching available seats for flight:", id);
+      const seats = await seatApi.getAvailable(id!);
+      console.log("Available seats:", seats);
+      setAvailableSeats(seats);
+    } catch (error) {
+      console.error("Error fetching available seats:", error);
+      toast({
+        title: "Warning",
+        description: "Could not load available seats information",
+        variant: "destructive"
+      });
+      setAvailableSeats([]);
+    } finally {
+      setSeatsLoading(false);
     }
   };
 
@@ -352,12 +370,19 @@ const FlightDetailPage = () => {
                       <Ticket className="h-5 w-5 text-blue-600 mr-2" />
                       <span className="font-medium">Available Seats</span>
                     </div>
-                    <span className="text-xl font-bold">{availableSeats.length}</span>
+                    <span className="text-xl font-bold">
+                      {seatsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : availableSeats.length}
+                    </span>
                   </div>
                 </div>
               </div>
               
-              {availableSeats.length > 0 ? (
+              {seatsLoading ? (
+                <div className="flex justify-center items-center py-6">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <span className="ml-2">Loading available seats...</span>
+                </div>
+              ) : availableSeats.length > 0 ? (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -371,7 +396,7 @@ const FlightDetailPage = () => {
                         <SelectContent className="bg-white">
                           {availableSeats.map((seat) => (
                             <SelectItem key={seat.id} value={seat.id}>
-                              {seat.seat_number} - {seat.class || 'Economy'} Class
+                              {seat.seat_number} {seat.class && `- ${seat.class} Class`}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -430,7 +455,7 @@ const FlightDetailPage = () => {
                   <TableRow>
                     <TableCell className="font-medium">Flight Duration</TableCell>
                     <TableCell>
-                      {flight.duration || 'Approximately 2 hours'}
+                      {flight.duration || calculateFlightDuration(flight)}
                     </TableCell>
                   </TableRow>
                 </TableBody>
@@ -489,6 +514,20 @@ const FlightDetailPage = () => {
       </AlertDialog>
     </PageLayout>
   );
+};
+
+// Helper function to calculate flight duration
+const calculateFlightDuration = (flight: Flight): string => {
+  try {
+    const departure = new Date(flight.departure_time || flight.departureTime || "");
+    const arrival = new Date(flight.arrival_time || flight.arrivalTime || "");
+    const durationMs = arrival.getTime() - departure.getTime();
+    const hours = Math.floor(durationMs / (1000 * 60 * 60));
+    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours}h ${minutes}m`;
+  } catch (error) {
+    return "Approximately 2 hours";
+  }
 };
 
 export default FlightDetailPage;

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { reservationApi, flightApi } from "@/lib/api";
 import { Reservation, Flight } from "@/lib/types";
 import { useToast } from "@/components/ui/use-toast";
-import { PlaneIcon, CalendarIcon, ClockIcon, MapPinIcon, X, Loader2 } from "lucide-react";
+import { PlaneIcon, CalendarIcon, ClockIcon, MapPinIcon, X, Loader2, RefreshCw } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,11 +48,10 @@ const MyReservations = () => {
       
       console.log("Fetching reservations for user ID:", user.id);
       
-      // Get reservation data
+      // Get reservation data directly via the API
       const data = await reservationApi.getForUser(user.id);
       console.log("Fetched reservations:", data);
       
-      // If we have reservations, try to fetch the associated flight details
       if (data && data.length > 0) {
         const reservationsWithFlights = await Promise.all(data.map(async (reservation) => {
           try {
@@ -80,7 +79,6 @@ const MyReservations = () => {
         description: "Failed to load your reservations",
         variant: "destructive"
       });
-      setReservations([]);
     } finally {
       setLoading(false);
     }
@@ -91,21 +89,25 @@ const MyReservations = () => {
     
     try {
       setCancelLoading(true);
-      await reservationApi.cancel(cancelReservationId);
+      const result = await reservationApi.cancel(cancelReservationId);
       
-      toast({
-        title: "Success",
-        description: "Reservation cancelled successfully"
-      });
-      
-      // Update local state to reflect the cancellation
-      setReservations(prevReservations => 
-        prevReservations.map(res => 
-          res.id === cancelReservationId 
-            ? { ...res, status: "cancelled" } 
-            : res
-        )
-      );
+      if (result && result.success) {
+        toast({
+          title: "Success",
+          description: "Reservation cancelled successfully"
+        });
+        
+        // Update local state to reflect the cancellation
+        setReservations(prevReservations => 
+          prevReservations.map(res => 
+            res.id === cancelReservationId 
+              ? { ...res, status: "cancelled" } 
+              : res
+          )
+        );
+      } else {
+        throw new Error("Failed to cancel reservation");
+      }
       
       setCancelReservationId(null);
     } catch (error) {
@@ -170,7 +172,10 @@ const MyReservations = () => {
               <p className="text-muted-foreground text-center max-w-md mb-6">
                 {error}
               </p>
-              <Button onClick={fetchReservations}>Try Again</Button>
+              <Button onClick={fetchReservations} className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4" />
+                Try Again
+              </Button>
             </CardContent>
           </Card>
         ) : reservations.length === 0 ? (
