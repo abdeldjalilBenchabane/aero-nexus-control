@@ -40,6 +40,7 @@ const apiFetch = async <T>(
     const response = await fetch(url, options);
     
     if (!response.ok) {
+      console.error(`API error: ${response.status} for ${url}`);
       throw new Error(`API error: ${response.status}`);
     }
     
@@ -62,6 +63,8 @@ export const flightApi = {
   search: (params: { origin?: string, destination?: string, date?: string }) => 
     apiFetch<Flight[]>("/flights/search", "GET", params),
   getAvailableSeats: (flightId: string) => apiFetch<Seat[]>(`/flights/${flightId}/available-seats`),
+  updateStatus: (id: string, status: string) => 
+    apiFetch<Flight>(`/flights/${id}/status`, "PUT", { status }),
 };
 
 // User API
@@ -133,12 +136,17 @@ export const airlineApi = {
 export const airplaneApi = {
   getAll: () => apiFetch<Airplane[]>("/airplanes"),
   getByAirline: (airlineId: string) => apiFetch<Airplane[]>(`/airplanes/airline/${airlineId}`),
-  getAvailable: (airlineId: string, departureTime: string, arrivalTime: string) => 
-    apiFetch<Airplane[]>("/airplanes/available", "GET", { 
+  getAvailable: (airlineId: string, departureTime: string, arrivalTime: string) => {
+    console.log("Fetching available airplanes with params:", { airlineId, departureTime, arrivalTime });
+    return apiFetch<Airplane[]>("/airplanes/available", "GET", { 
       airline_id: airlineId, 
       departure_time: departureTime, 
       arrival_time: arrivalTime 
-    }),
+    }).catch(error => {
+      console.error("Error fetching available airplanes, falling back to all airline's airplanes:", error);
+      return airplaneApi.getByAirline(airlineId);
+    });
+  },
   create: (airplane: { name: string, airline_id: string, capacity: number }) => 
     apiFetch<Airplane>("/airplanes", "POST", airplane),
   delete: (id: string) => apiFetch<void>(`/airplanes/${id}`, "DELETE"),

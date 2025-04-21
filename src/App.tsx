@@ -44,6 +44,7 @@ import ReserveSeat from "./pages/passenger/ReserveSeat";
 import MyReservations from "./pages/passenger/MyReservations";
 import MyNotifications from "./pages/passenger/MyNotifications";
 import FlightDetails from "./pages/passenger/FlightDetails";
+import PassengerFlightPage from "./pages/passenger/flight/[id]";
 
 const queryClient = new QueryClient();
 
@@ -181,6 +182,11 @@ const App = () => (
             <Route path="/passenger/flight-details/:id" element={
               <ProtectedRoute allowedRoles={["passenger"]}>
                 <FlightDetails />
+              </ProtectedRoute>
+            } />
+            <Route path="/passenger/flight/:id" element={
+              <ProtectedRoute allowedRoles={["passenger"]}>
+                <PassengerFlightPage />
               </ProtectedRoute>
             } />
             

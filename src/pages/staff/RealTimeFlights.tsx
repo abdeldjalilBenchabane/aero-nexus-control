@@ -108,8 +108,8 @@ const RealTimeFlights = () => {
         return;
       }
       
-      // Update the flight status
-      const updatedFlight = await flightApi.update(flight.id, { status: nextStatus });
+      // Update the flight status using dedicated endpoint
+      await flightApi.updateStatus(flight.id, nextStatus);
       
       toast({
         title: "Status Updated",
@@ -142,6 +142,15 @@ const RealTimeFlights = () => {
     } catch (error) {
       return "Invalid date";
     }
+  };
+
+  const getGateDisplay = (flight: Flight) => {
+    // Check all possible properties where gate information might be stored
+    if (flight.gate_number) return flight.gate_number;
+    if (flight.gate_id) return flight.gate_id;
+    if (flight.gate) return flight.gate;
+    if (typeof flight.gate === 'object' && flight.gate && 'name' in flight.gate) return flight.gate.name;
+    return "—";
   };
 
   return (
@@ -243,7 +252,7 @@ const RealTimeFlights = () => {
                             {flight.status.charAt(0).toUpperCase() + flight.status.slice(1).replace("_", " ")}
                           </Badge>
                         </TableCell>
-                        <TableCell>{flight.gate_number || flight.gate_id || "—"}</TableCell>
+                        <TableCell>{getGateDisplay(flight)}</TableCell>
                         <TableCell>
                           {(flight.status !== "cancelled" && flight.status !== "completed") ? (
                             <div className="flex flex-col gap-2">

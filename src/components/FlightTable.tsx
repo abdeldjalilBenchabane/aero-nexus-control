@@ -79,9 +79,21 @@ const FlightTable = ({
         return "bg-green-700";
       case "in_air":
         return "bg-indigo-500";
+      case "completed":
+        return "bg-green-900";
       default:
         return "bg-gray-500";
     }
+  };
+
+  // Helper function to get gate display value
+  const getGateDisplay = (flight: Flight) => {
+    // Check all possible properties where gate information might be stored
+    if (flight.gate_number) return flight.gate_number;
+    if (flight.gate_id) return flight.gate_id;
+    if (flight.gate) return flight.gate;
+    if (typeof flight.gate === 'object' && flight.gate && 'name' in flight.gate) return flight.gate.name;
+    return "—";
   };
 
   const filteredFlights = flights.filter(flight => {
@@ -132,6 +144,7 @@ const FlightTable = ({
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                   <SelectItem value="landed">Landed</SelectItem>
                   <SelectItem value="in_air">In Air</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -171,10 +184,10 @@ const FlightTable = ({
                   <TableCell>{formatDate(flight.arrival_time || flight.arrivalTime || "")}</TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(flight.status)}>
-                      {flight.status.charAt(0).toUpperCase() + flight.status.slice(1)}
+                      {flight.status.charAt(0).toUpperCase() + flight.status.slice(1).replace("_", " ")}
                     </Badge>
                   </TableCell>
-                  <TableCell>{flight.gate_number || flight.gate_id || flight.gate || "—"}</TableCell>
+                  <TableCell>{getGateDisplay(flight)}</TableCell>
                   {(actions.length > 0 || showActions || selectable) && (
                     <TableCell>
                       <div className="flex space-x-2">
