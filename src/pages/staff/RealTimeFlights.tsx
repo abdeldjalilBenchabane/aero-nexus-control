@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { flightApi, airlineApi } from "@/lib/api";
 import { Flight, FlightStatus } from "@/lib/types";
@@ -29,6 +28,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
+import { Loader2 } from "lucide-react";
 
 const statusProgressionMap: Record<FlightStatus, FlightStatus> = {
   scheduled: "boarding",
@@ -64,7 +64,6 @@ const RealTimeFlights = () => {
   useEffect(() => {
     fetchFlights();
     
-    // Set up polling to refresh flight data every 60 seconds
     const interval = setInterval(fetchFlights, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -74,7 +73,6 @@ const RealTimeFlights = () => {
       setLoading(true);
       const data = await flightApi.getAll();
       
-      // Sort flights by departure time
       const sortedFlights = [...data].sort((a, b) => {
         const dateA = new Date(a.departure_time || a.departureTime || "");
         const dateB = new Date(b.departure_time || b.departureTime || "");
@@ -95,15 +93,12 @@ const RealTimeFlights = () => {
   };
 
   const updateFlightStatus = async (flight: Flight, newStatus?: FlightStatus) => {
-    // Set this specific flight as updating
     setUpdatingFlights(prev => ({ ...prev, [flight.id]: true }));
     
     try {
       const currentStatus = flight.status;
-      // Use the provided status or default to the next status
       const nextStatus = newStatus || statusProgressionMap[currentStatus];
       
-      // Skip if the flight is already at a terminal status
       if (currentStatus === "completed" || currentStatus === "cancelled") {
         toast({
           title: "Status Unchanged",
@@ -114,7 +109,6 @@ const RealTimeFlights = () => {
       
       console.log(`Updating flight ${flight.id} status to:`, nextStatus);
       
-      // Update the flight status using dedicated endpoint
       await flightApi.updateStatus(flight.id, nextStatus);
       
       toast({
@@ -122,7 +116,6 @@ const RealTimeFlights = () => {
         description: `Flight ${flight.flight_number || flight.flightNumber} status changed from ${currentStatus} to ${nextStatus}`
       });
       
-      // Refresh flight list
       fetchFlights();
       
     } catch (error) {
@@ -153,11 +146,9 @@ const RealTimeFlights = () => {
   };
 
   const getGateDisplay = (flight: Flight) => {
-    // Check all possible properties where gate information might be stored
     if (flight.gate_number) return flight.gate_number;
     if (flight.gate_id) return flight.gate_id;
     if (typeof flight.gate === 'string') return flight.gate;
-    // Check if gate is an object with a name property
     if (flight.gate && typeof flight.gate === 'object' && 'name' in (flight.gate as any)) {
       return (flight.gate as any).name;
     }

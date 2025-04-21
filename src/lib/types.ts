@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string; // Required now
@@ -59,6 +60,7 @@ export interface Seat {
   seat_number: string;
   is_reserved?: boolean;
   is_available?: boolean;
+  class?: string; // Added class property for seat
   // For backward compatibility
   flightId?: string;
   airplaneId?: string;
@@ -75,6 +77,7 @@ export interface Flight {
   airline_id: string;
   airline_name?: string;
   airplane_id?: string;
+  airplane_name?: string; // Added airplane_name property
   gate_id?: string;
   gate_number?: string;
   runway_id?: string;
@@ -85,14 +88,16 @@ export interface Flight {
   arrival_time: string;
   status: FlightStatus;
   price: number;
+  duration?: string; // Added duration property
   created_at?: string; // Make optional for creating new records
   // For backward compatibility
   flightNumber?: string;
   airline?: string;
   airlineName?: string;
+  airplaneName?: string; // Added airplaneName property
   departureTime?: string;
   arrivalTime?: string;
-  gate?: string;
+  gate?: string | { name: string };
   runway?: string;
   availableSeats?: string[];
   bookedSeats?: { seatId: string; passengerId?: string }[] | string[];

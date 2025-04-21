@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { flightApi, seatApi, reservationApi } from "@/lib/api";
@@ -77,7 +76,6 @@ const FlightDetailPage = () => {
       const flightData = await flightApi.getById(id!);
       setFlight(flightData);
 
-      // Fetch available seats
       const seats = await seatApi.getAvailable(id!);
       setAvailableSeats(seats);
     } catch (error) {
@@ -192,7 +190,6 @@ const FlightDetailPage = () => {
     }
   };
 
-  // Calculate random-ish flight price based on flight ID
   const calculatePrice = () => {
     if (!flight) return 0;
     const basePrice = 150;
@@ -363,7 +360,7 @@ const FlightDetailPage = () => {
                         <SelectContent>
                           {availableSeats.map((seat) => (
                             <SelectItem key={seat.id} value={seat.id}>
-                              {seat.seat_number} - {seat.class} Class
+                              {seat.seat_number} - {seat.class || 'Economy'} Class
                             </SelectItem>
                           ))}
                         </SelectContent>
