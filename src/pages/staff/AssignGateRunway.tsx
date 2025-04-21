@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import PageLayout from "@/components/PageLayout";
 import { Button } from "@/components/ui/button";
@@ -28,9 +27,7 @@ const AssignGateRunway = () => {
   const [success, setSuccess] = useState(false);
   const { toast } = useToast();
 
-  // Fetch flights, gates, and runways on component mount
   useEffect(() => {
-    // In a real app, this would fetch from the API
     fetch("http://localhost:3001/api/flights")
       .then(response => response.json())
       .then(data => {
@@ -38,7 +35,6 @@ const AssignGateRunway = () => {
       })
       .catch(error => {
         console.error("Error fetching flights:", error);
-        // Fallback to mock data
         import("@/lib/db").then(({ flights }) => {
           setFlights(flights);
         });
@@ -51,7 +47,6 @@ const AssignGateRunway = () => {
       })
       .catch(error => {
         console.error("Error fetching gates:", error);
-        // Fallback to mock data
         import("@/lib/db").then(({ gates }) => {
           setGates(gates);
         });
@@ -64,14 +59,12 @@ const AssignGateRunway = () => {
       })
       .catch(error => {
         console.error("Error fetching runways:", error);
-        // Fallback to mock data
         import("@/lib/db").then(({ runways }) => {
           setRunways(runways);
         });
       });
   }, []);
 
-  // Filter flights for the selected date
   const availableFlights = flights.filter(flight => {
     if (!selectedDate) return false;
     const flightDate = new Date(flight.departureTime);
@@ -82,7 +75,6 @@ const AssignGateRunway = () => {
     );
   });
 
-  // Get already assigned gates and runways for the selected date
   const assignedGates = availableFlights
     .filter(flight => flight.gate)
     .map(flight => flight.gate);
@@ -91,9 +83,7 @@ const AssignGateRunway = () => {
     .filter(flight => flight.runway)
     .map(flight => flight.runway);
 
-  // Update available gates and runways when date or flight changes
   useEffect(() => {
-    // In a real app, this would make an API call with the date
     setAvailableGates(gates.filter(gate => !assignedGates.includes(gate.name)));
     setAvailableRunways(runways.filter(runway => !assignedRunways.includes(runway.name)));
   }, [selectedDate, selectedFlight, gates, runways, assignedGates, assignedRunways]);
@@ -126,7 +116,6 @@ const AssignGateRunway = () => {
         );
       }
 
-      // Execute all promises
       Promise.all(promises)
         .then(() => {
           toast({
@@ -137,7 +126,6 @@ const AssignGateRunway = () => {
           setSuccess(true);
           setTimeout(() => setSuccess(false), 3000);
           
-          // Reset selections
           setSelectedGate("");
           setSelectedRunway("");
         })
@@ -150,6 +138,15 @@ const AssignGateRunway = () => {
           });
         });
     }
+  };
+
+  const getGateDisplay = (gate: string | { name: string } | undefined): string => {
+    if (typeof gate === 'string') {
+      return gate;
+    } else if (gate && typeof gate === 'object' && 'name' in gate) {
+      return gate.name;
+    }
+    return "—";
   };
 
   return (
@@ -276,7 +273,6 @@ const AssignGateRunway = () => {
           </CardContent>
         </Card>
         
-        {/* Assigned Resources */}
         <Card>
           <CardHeader>
             <CardTitle>Current Assignments</CardTitle>
@@ -309,7 +305,7 @@ const AssignGateRunway = () => {
                           <td className="p-2 font-medium">{flight.flightNumber}</td>
                           <td className="p-2">{flight.origin} → {flight.destination}</td>
                           <td className="p-2">{new Date(flight.departureTime).toLocaleTimeString()}</td>
-                          <td className="p-2">{flight.gate || "—"}</td>
+                          <td className="p-2">{getGateDisplay(flight.gate)}</td>
                           <td className="p-2">{flight.runway || "—"}</td>
                         </tr>
                       ))
