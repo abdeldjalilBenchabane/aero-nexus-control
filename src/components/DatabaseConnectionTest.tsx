@@ -18,8 +18,8 @@ const DatabaseConnectionTest = () => {
       setStatus('testing');
       setErrorMessage(null);
       
-      // Attempt to connect to the database
-      const response = await fetch('http://localhost:3001/api/test-db-connection');
+      // Update the endpoint to match the one defined in server.js
+      const response = await fetch('http://localhost:3001/api/test-connection');
       const data = await response.json();
       
       if (data.success) {

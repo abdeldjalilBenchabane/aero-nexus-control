@@ -34,6 +34,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 type SearchFormValues = {
   origin: string;
@@ -43,6 +44,7 @@ type SearchFormValues = {
 
 const SearchFlights = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [flights, setFlights] = useState<Flight[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -60,7 +62,7 @@ const SearchFlights = () => {
     setHasSearched(true);
 
     try {
-      // FIX: Format the date properly for the search API
+      // Format the date properly for the search API
       const searchParams: {
         origin?: string;
         destination?: string;
@@ -79,10 +81,41 @@ const SearchFlights = () => {
         searchParams.date = format(data.date, "yyyy-MM-dd");
       }
 
+      console.log("Searching flights with params:", searchParams);
+
       // Only search if at least one parameter is provided
       if (Object.keys(searchParams).length > 0) {
-        const results = await flightApi.search(searchParams);
-        setFlights(results);
+        try {
+          // First try the search API
+          const results = await flightApi.search(searchParams);
+          setFlights(results);
+        } catch (error) {
+          console.error("Search API failed, falling back to getAll:", error);
+          // If search API fails, fall back to getAll and filter client-side
+          const allFlights = await flightApi.getAll();
+          
+          // Client-side filtering
+          const filteredFlights = allFlights.filter(flight => {
+            let matches = true;
+            
+            if (searchParams.origin) {
+              matches = matches && flight.origin.toLowerCase().includes(searchParams.origin.toLowerCase());
+            }
+            
+            if (searchParams.destination) {
+              matches = matches && flight.destination.toLowerCase().includes(searchParams.destination.toLowerCase());
+            }
+            
+            if (searchParams.date) {
+              const flightDate = new Date(flight.departure_time || flight.departureTime || "").toISOString().split('T')[0];
+              matches = matches && flightDate === searchParams.date;
+            }
+            
+            return matches;
+          });
+          
+          setFlights(filteredFlights);
+        }
       } else {
         // If no search parameters, get all flights
         const results = await flightApi.getAll();
@@ -96,19 +129,31 @@ const SearchFlights = () => {
         variant: "destructive",
       });
       
-      // Show some flights anyway from the getAll endpoint as a fallback
-      try {
-        const allFlights = await flightApi.getAll();
-        setFlights(allFlights);
-      } catch (e) {
-        console.error("Error fetching all flights as fallback:", e);
-      }
+      setFlights([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSelectFlight = (flight: Flight) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to book a flight",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (user.role !== "passenger") {
+      toast({
+        title: "Access Denied",
+        description: "Only passengers can book flights",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Navigate to flight details page
     window.location.href = `/passenger/flight/${flight.id}`;
   };

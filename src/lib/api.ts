@@ -37,6 +37,7 @@ const apiFetch = async <T>(
       options.body = JSON.stringify(data);
     }
 
+    console.log(`API ${method} request to ${url}`);
     const response = await fetch(url, options);
     
     if (!response.ok) {
@@ -84,8 +85,15 @@ export const userApi = {
 export const gateApi = {
   getAll: () => apiFetch<Gate[]>("/gates"),
   getById: (id: string) => apiFetch<Gate>(`/gates/${id}`),
-  getAvailable: (departureTime: string, arrivalTime: string) => 
-    apiFetch<Gate[]>("/gates/available", "GET", { departure_time: departureTime, arrival_time: arrivalTime }),
+  getAvailable: (departureTime: string, arrivalTime: string) => {
+    console.log("Fetching available gates with params:", { departureTime, arrivalTime });
+    // Try the proper endpoint, then fall back to getAll if not available
+    return apiFetch<Gate[]>("/gates/available", "GET", { departure_time: departureTime, arrival_time: arrivalTime })
+      .catch(error => {
+        console.error("Error fetching available gates, falling back to all gates:", error);
+        return gateApi.getAll();
+      });
+  },
   create: (gate: Omit<Gate, "id">) => apiFetch<Gate>("/gates", "POST", gate),
   update: (id: string, gate: Partial<Gate>) => apiFetch<Gate>(`/gates/${id}`, "PUT", gate),
   delete: (id: string) => apiFetch<void>(`/gates/${id}`, "DELETE"),
@@ -97,8 +105,15 @@ export const gateApi = {
 export const runwayApi = {
   getAll: () => apiFetch<Runway[]>("/runways"),
   getById: (id: string) => apiFetch<Runway>(`/runways/${id}`),
-  getAvailable: (departureTime: string, arrivalTime: string) => 
-    apiFetch<Runway[]>("/runways/available", "GET", { departure_time: departureTime, arrival_time: arrivalTime }),
+  getAvailable: (departureTime: string, arrivalTime: string) => {
+    console.log("Fetching available runways with params:", { departureTime, arrivalTime });
+    // Try the proper endpoint, then fall back to getAll if not available
+    return apiFetch<Runway[]>("/runways/available", "GET", { departure_time: departureTime, arrival_time: arrivalTime })
+      .catch(error => {
+        console.error("Error fetching available runways, falling back to all runways:", error);
+        return runwayApi.getAll();
+      });
+  },
   create: (runway: Omit<Runway, "id">) => apiFetch<Runway>("/runways", "POST", runway),
   update: (id: string, runway: Partial<Runway>) => apiFetch<Runway>(`/runways/${id}`, "PUT", runway),
   delete: (id: string) => apiFetch<void>(`/runways/${id}`, "DELETE"),

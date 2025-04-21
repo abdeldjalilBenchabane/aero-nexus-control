@@ -58,6 +58,7 @@ const RealTimeFlights = () => {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [updatingFlights, setUpdatingFlights] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -94,6 +95,9 @@ const RealTimeFlights = () => {
   };
 
   const updateFlightStatus = async (flight: Flight, newStatus?: FlightStatus) => {
+    // Set this specific flight as updating
+    setUpdatingFlights(prev => ({ ...prev, [flight.id]: true }));
+    
     try {
       const currentStatus = flight.status;
       // Use the provided status or default to the next status
@@ -107,6 +111,8 @@ const RealTimeFlights = () => {
         });
         return;
       }
+      
+      console.log(`Updating flight ${flight.id} status to:`, nextStatus);
       
       // Update the flight status using dedicated endpoint
       await flightApi.updateStatus(flight.id, nextStatus);
@@ -126,6 +132,8 @@ const RealTimeFlights = () => {
         description: "Could not update flight status. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setUpdatingFlights(prev => ({ ...prev, [flight.id]: false }));
     }
   };
 
@@ -261,7 +269,6 @@ const RealTimeFlights = () => {
                             <div className="flex flex-col gap-2">
                               <Select 
                                 onValueChange={(value) => updateFlightStatus(flight, value as FlightStatus)}
-                                defaultValue=""
                               >
                                 <SelectTrigger className="w-[140px]">
                                   <SelectValue placeholder="Update Status" />
@@ -278,8 +285,16 @@ const RealTimeFlights = () => {
                                 onClick={() => updateFlightStatus(flight)}
                                 variant="outline"
                                 size="sm"
+                                disabled={updatingFlights[flight.id]}
                               >
-                                Next Status ({statusLabels[statusProgressionMap[flight.status]]})
+                                {updatingFlights[flight.id] ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Updating...
+                                  </>
+                                ) : (
+                                  <>Next Status ({statusLabels[statusProgressionMap[flight.status]]})</>
+                                )}
                               </Button>
                             </div>
                           ) : (
