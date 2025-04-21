@@ -148,8 +148,11 @@ const RealTimeFlights = () => {
     // Check all possible properties where gate information might be stored
     if (flight.gate_number) return flight.gate_number;
     if (flight.gate_id) return flight.gate_id;
-    if (flight.gate) return flight.gate;
-    if (typeof flight.gate === 'object' && flight.gate && 'name' in flight.gate) return flight.gate.name;
+    if (typeof flight.gate === 'string') return flight.gate;
+    // Check if gate is an object with a name property
+    if (flight.gate && typeof flight.gate === 'object' && 'name' in (flight.gate as any)) {
+      return (flight.gate as any).name;
+    }
     return "—";
   };
 
